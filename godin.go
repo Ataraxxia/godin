@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"flag"
+	"strings"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,7 +29,7 @@ func loadConfig() {
 	}
 
 	err = json.Unmarshal([]byte(f), &config)
-	switch loglevel := config.LogLevel; loglevel {
+	switch loglevel := strings.ToLower(config.LogLevel); loglevel {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
 		log.SetReportCaller(true)
@@ -43,8 +44,8 @@ func main() {
 
 	r := mux.NewRouter()
 	r.StrictSlash(true)
-	//r.HandleFunc("/", getDefaultPage)
-	r.HandleFunc("/reports/upload", saveReport).Methods("POST")
+	r.HandleFunc("/", getDefaultPage)
+	r.HandleFunc("/reports/upload/", saveReport).Methods("POST")
 
 	log.Infof("Starting server %s:%s", config.Address, config.Port)
 	err = http.ListenAndServe(config.Address+":"+config.Port, r)
@@ -52,8 +53,14 @@ func main() {
 
 }
 
+func getDefaultPage(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Godin"))
+}
+
+
 func saveReport(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Getting new report")
 	payload, _ := ioutil.ReadAll(r.Body)
-	w.Write(payload)
+	log.Debug(string(payload))
+	w.Write([]byte("Godin says OK"))
 }
