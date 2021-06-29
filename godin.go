@@ -16,6 +16,10 @@ type configuration struct {
 	LogLevel	string
 }
 
+const (
+	maxMemoryBytes = 10485760 // 10MiB
+)
+
 var (
 	config * configuration
 )
@@ -60,7 +64,17 @@ func getDefaultPage(w http.ResponseWriter, r *http.Request) {
 
 func saveReport(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Getting new report")
-	payload, _ := ioutil.ReadAll(r.Body)
-	log.Debug(string(payload))
+	if err := r.ParseMultipartForm(maxMemoryBytes); err != nil {
+		log.Error(err)
+	}
+	for key, value := range r.Form {
+		log.Debugf("%s = %s", key, value)
+	}
+
+	log.Debug("repos:", r.FormValue("repos"))
+	log.Debug("Report done")
+
 	w.Write([]byte("Godin says OK"))
 }
+
+
