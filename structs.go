@@ -9,6 +9,14 @@ type Package struct {
 	PkgManager	string
 }
 
+type Repository struct {
+	Type		string
+	Name		string
+	Priority	int
+	Url		string
+	Description	string
+}
+
 type Report struct {
 	Host		string
 	Tags		[]string
@@ -17,9 +25,9 @@ type Report struct {
 	Protocol	string
 	OS		string
 	Packages	[]Package
-	Repos		[]string
-	SecUpdates	[]string
-	BugUpdates	[]string
+	Repos		[]Repository
+	SecUpdates	[]Package
+	BugUpdates	[]Package
 	Reboot		string
 }
 
