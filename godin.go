@@ -28,6 +28,7 @@ var (
 func loadConfig() {
 	flag.Parse()
 
+
 	f, err := ioutil.ReadFile("/etc/godin/settings.json")
 	if err != nil {
 		log.Fatal("Coulnd't find /etc/godin/settings.json")
@@ -47,12 +48,13 @@ func loadConfig() {
 		tmp := config.DataPath
 		config.DataPath = tmp[:len(tmp)-1]
 	}
-
 }
 
 func main() {
 	var err error
 	loadConfig()
+
+	initDB()
 
 	r := mux.NewRouter()
 	r.StrictSlash(true)
@@ -76,11 +78,12 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 	}
 
-	if err := saveReport(r.Form); err != nil {
+	reportName, err := saveReport(r.Form)
+	if err != nil {
 		log.Error(err)
 	}
 
-	log.Debug("Report saved")
+	log.Debugf("Report %s saved", reportName)
 
 	w.Write([]byte("Godin says OK"))
 }

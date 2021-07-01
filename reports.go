@@ -18,6 +18,9 @@ func parsePackages(packages []string) []Package {
 	var pkgs []Package
 
         for _, pack := range packages {
+		if pack == "" {
+			continue
+		}
                 pack = strings.ReplaceAll(pack, "'", "")
                 p := strings.Split(pack, " ")
                 if len(p) <= 1 {
@@ -41,6 +44,9 @@ func parseRepositories(repositories []string) []Repository {
 	var repos []Repository
 
 	for _, repo := range repositories {
+		if repo == "" {
+			continue
+		}
 		r := strings.Split(repo, "' '")
 		for i, item := range r {
 			item = strings.ReplaceAll(item, "'", "")
@@ -73,7 +79,7 @@ func parseRepositories(repositories []string) []Repository {
 	return repos
 }
 
-func saveReport(form url.Values) error {
+func saveReport(form url.Values) (string, error) {
 
 	var report Report
         report.Host = form["host"][0]
@@ -103,8 +109,18 @@ func saveReport(form url.Values) error {
 
         dt := strings.ReplaceAll(time.Now().Format("01-02-2006 15:04:05"), " ", "_")
 
-        fpath := fmt.Sprintf("%s/%s_%s.json", config.DataPath, report.Host, dt)
-        ioutil.WriteFile(fpath, bytes, os.ModePerm)
+	fname := fmt.Sprintf("%s.json", dt)
+        fpath := fmt.Sprintf("%s/reports/%s", config.DataPath, report.Host)
 
-	return nil
+	if _, err := os.Stat(fpath); os.IsNotExist(err) {
+		err := os.MkdirAll(fpath, 0755)
+		if err != nil {
+			return "", err
+		}
+	}
+
+        ioutil.WriteFile(fpath + "/" + fname, bytes, os.ModePerm)
+        ioutil.WriteFile(fpath + "/latest.json" , bytes, os.ModePerm)
+
+	return fpath, nil
 }
