@@ -12,6 +12,8 @@ TAGS=""
 CLIENT_HOSTNAME=`echo $HOSTNAME`
 UPDATE=true
 
+TMP_PKG_LIST="/tmp/godin_pkg_list"
+TMP_HOST_INFO="/tmp/godin_host_info"
 
 usage() {
     echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
@@ -124,6 +126,15 @@ get_host_data() {
 			fi
 		done
 	fi
+
+	# Print JSON 
+	echo "" > $TMP_HOST_INFO
+	echo "{" >> $TMP_HOST_INFO
+	echo "	\"kernel\": \"$kernel_version\"," >> $TMP_HOST_INFO
+	echo "	\"architecture\": \"$architecture\"," >> $TMP_HOST_INFO
+	echo "	\"os\": \"$os\"" >> $TMP_HOST_INFO
+	echo "}" >> $TMP_HOST_INFO
+
 	if ${VERBOSE}; then
 		echo "Kernel: ${kernel_version}"
 		echo "Architecture: ${architecture}"
@@ -141,6 +152,9 @@ get_host_packages() {
 		# Get list of installed package with "ii" status
 		packages_list=$(dpkg -l | grep "^ii" | awk '{print $2}')
 
+		echo "" > $TMP_PKG_LIST
+
+		echo "{" >> $TMP_PKG_LIST
 	 	for package in $packages_list; do 
 			package_details=$(apt-cache policy ${package})
 			installed_ver=$(echo $"$package_details" | grep -i "installed" | awk '{print $2}')
@@ -158,27 +172,33 @@ get_host_packages() {
 				candidate_repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
 				candidate_repository_url=$(echo $repository_str | cut -f 2- -d ' ')
 
-				echo "{"
-				echo "	\"name\": \"$package\","
-				echo "	\"version\": \"$installed_ver\","
-				echo "	\"repository\": \"$repository_url\","
-				echo "	\"upgradable\": \"yes\","
-				echo "	\"candidate\": {"
-				echo "		\"version\": \"$candidate_ver\","
-				echo "		\"repository\": \"$candidate_repository_url\""
-				echo "	\"}\""
-				echo "},"
+				echo "{" >> $TMP_PKG_LIST
+				echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
+				echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
+				echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
+				echo "	\"upgradable\": \"yes\"," >> $TMP_PKG_LIST
+				echo "	\"candidate\": {" >> $TMP_PKG_LIST
+				echo "		\"version\": \"$candidate_ver\"," >> $TMP_PKG_LIST
+				echo "		\"repository\": \"$candidate_repository_url\"" >> $TMP_PKG_LIST
+				echo "	\"}\"" >> $TMP_PKG_LIST
+				echo "}," >> $TMP_PKG_LIST
 			else
 				# We only print package + repo
-				echo "{"
-				echo "	\"name\": \"$package\","
-				echo "	\"version\": \"$installed_ver\","
-				echo "	\"repository\": \"$repository_url\","
-				echo "	\"upgradable\": \"no\""
-				echo "},"
+				echo "{" >> $TMP_PKG_LIST
+				echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
+				echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
+				echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
+				echo "	\"upgradable\": \"no\"" >> $TMP_PKG_LIST
+				echo "}," >> $TMP_PKG_LIST
 			fi
 		done
+		echo "}" >> $TMP_PKG_LIST
 	fi
+}
+
+cleanup() {
+	rm $TMP_HOST_INFO
+	rm $TMP_PKG_LIST
 }
 
 
@@ -187,4 +207,6 @@ check_requirements
 
 get_host_data
 get_host_packages
+
+cleanup
 
