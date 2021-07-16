@@ -133,10 +133,50 @@ get_host_data() {
 
 get_host_packages() {
 	if check_command_exists apt-get; then
-		apt-get update
+
+		if $UPDATE; then
+			apt-get update
+		fi
+
+		# Get list of installed package with "ii" status
 		packages_list=$(dpkg -l | grep "^ii" | awk '{print $2}')
+
 	 	for package in $packages_list; do 
 			package_details=$(apt-cache policy ${package})
+			installed_ver=$(echo $"$package_details" | grep -i "installed" | awk '{print $2}')
+			candidate_ver=$(echo $"$package_details" | grep -i "candidate" | awk '{print $2}')
+
+			# We need to extract line that comes after match for "***"
+			tmp_line_no=$(echo $"$package_details" | grep -n "\*\*\*" | awk '{print $1}' FS=":")
+			repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
+			repository_url=$(echo $repository_str | cut -f 2- -d ' ')
+
+
+			if [ "$installed_ver" != "$candidate_ver" ]; then
+				# We print package + repo + candidate + candidate_repo
+				tmp_line_no=$(echo $"$package_details" | grep -n "$candidate_ver " | awk '{print $1}' FS=":")
+				candidate_repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
+				candidate_repository_url=$(echo $repository_str | cut -f 2- -d ' ')
+
+				echo "{"
+				echo "	\"name\": \"$package\","
+				echo "	\"version\": \"$installed_ver\","
+				echo "	\"repository\": \"$repository_url\","
+				echo "	\"upgradable\": \"yes\","
+				echo "	\"candidate\": {"
+				echo "		\"version\": \"$candidate_ver\","
+				echo "		\"repository\": \"$candidate_repository_url\""
+				echo "	\"}\""
+				echo "},"
+			else
+				# We only print package + repo
+				echo "{"
+				echo "	\"name\": \"$package\","
+				echo "	\"version\": \"$installed_ver\","
+				echo "	\"repository\": \"$repository_url\","
+				echo "	\"upgradable\": \"no\""
+				echo "},"
+			fi
 		done
 	fi
 }
