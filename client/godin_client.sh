@@ -134,66 +134,60 @@ get_host_data() {
 	echo "	\"architecture\": \"$architecture\"," >> $TMP_HOST_INFO
 	echo "	\"os\": \"$os\"" >> $TMP_HOST_INFO
 	echo "}" >> $TMP_HOST_INFO
-
-	if ${VERBOSE}; then
-		echo "Kernel: ${kernel_version}"
-		echo "Architecture: ${architecture}"
-		echo "OS:	${os}"
-	fi
 }
 
-get_host_packages() {
-	if check_command_exists apt-get; then
-
-		if $UPDATE; then
-			apt-get update
-		fi
-
-		# Get list of installed package with "ii" status
-		packages_list=$(dpkg -l | grep "^ii" | awk '{print $2}')
-
-		echo "" > $TMP_PKG_LIST
-
-		echo "{" >> $TMP_PKG_LIST
-	 	for package in $packages_list; do 
-			package_details=$(apt-cache policy ${package})
-			installed_ver=$(echo $"$package_details" | grep -i "installed" | awk '{print $2}')
-			candidate_ver=$(echo $"$package_details" | grep -i "candidate" | awk '{print $2}')
-
-			# We need to extract line that comes after match for "***"
-			tmp_line_no=$(echo $"$package_details" | grep -n "\*\*\*" | awk '{print $1}' FS=":")
-			repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
-			repository_url=$(echo $repository_str | cut -f 2- -d ' ')
-
-
-			if [ "$installed_ver" != "$candidate_ver" ]; then
-				# We print package + repo + candidate + candidate_repo
-				tmp_line_no=$(echo $"$package_details" | grep -n "$candidate_ver " | awk '{print $1}' FS=":")
-				candidate_repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
-				candidate_repository_url=$(echo $repository_str | cut -f 2- -d ' ')
-
-				echo "{" >> $TMP_PKG_LIST
-				echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
-				echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
-				echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
-				echo "	\"upgradable\": \"yes\"," >> $TMP_PKG_LIST
-				echo "	\"candidate\": {" >> $TMP_PKG_LIST
-				echo "		\"version\": \"$candidate_ver\"," >> $TMP_PKG_LIST
-				echo "		\"repository\": \"$candidate_repository_url\"" >> $TMP_PKG_LIST
-				echo "	\"}\"" >> $TMP_PKG_LIST
-				echo "}," >> $TMP_PKG_LIST
-			else
-				# We only print package + repo
-				echo "{" >> $TMP_PKG_LIST
-				echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
-				echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
-				echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
-				echo "	\"upgradable\": \"no\"" >> $TMP_PKG_LIST
-				echo "}," >> $TMP_PKG_LIST
-			fi
-		done
-		echo "}" >> $TMP_PKG_LIST
+get_apt_packages() {
+	if $UPDATE; then
+		apt-get update
 	fi
+
+	# Get list of installed package with "ii" status
+	packages_list=$(dpkg -l | grep "^ii" | awk '{print $2}')
+
+	echo "" > $TMP_PKG_LIST
+
+	echo "{" >> $TMP_PKG_LIST
+	for package in $packages_list; do 
+		package_details=$(apt-cache policy ${package})
+		installed_ver=$(echo $"$package_details" | grep -i "installed" | awk '{print $2}')
+		candidate_ver=$(echo $"$package_details" | grep -i "candidate" | awk '{print $2}')
+
+		# We need to extract line that comes after match for "***"
+		tmp_line_no=$(echo $"$package_details" | grep -n "\*\*\*" | awk '{print $1}' FS=":")
+		repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
+		repository_url=$(echo $repository_str | cut -f 2- -d ' ')
+
+
+		if [ "$installed_ver" != "$candidate_ver" ]; then
+			# We print package + repo + candidate + candidate_repo
+			tmp_line_no=$(echo $"$package_details" | grep -n "$candidate_ver " | awk '{print $1}' FS=":")
+			candidate_repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
+			candidate_repository_url=$(echo $repository_str | cut -f 2- -d ' ')
+
+			echo "{" >> $TMP_PKG_LIST
+			echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
+			echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
+			echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
+			echo "	\"upgradable\": \"yes\"," >> $TMP_PKG_LIST
+			echo "	\"candidate\": {" >> $TMP_PKG_LIST
+			echo "		\"version\": \"$candidate_ver\"," >> $TMP_PKG_LIST
+			echo "		\"repository\": \"$candidate_repository_url\"" >> $TMP_PKG_LIST
+			echo "	\"}\"" >> $TMP_PKG_LIST
+			echo "}," >> $TMP_PKG_LIST
+		else
+			# We only print package + repo
+			echo "{" >> $TMP_PKG_LIST
+			echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
+			echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
+			echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
+			echo "	\"upgradable\": \"no\"" >> $TMP_PKG_LIST
+			echo "}," >> $TMP_PKG_LIST
+		fi
+	done
+	echo "}" >> $TMP_PKG_LIST
+}
+
+get_yum_packages() {
 }
 
 cleanup() {
@@ -206,7 +200,16 @@ parseopts "$@"
 check_requirements
 
 get_host_data
-get_host_packages
 
-cleanup
+	if check_command_exists apt-get; then
+		get_apt_packages
+	elif check_command_exists yum; then
+		get_yum_packages
+	fi
+
+if $VERBOSE; then
+	cat $TMP_HOST_INFO $TMP_PKG_LIST
+fi
+
+#cleanup
 
