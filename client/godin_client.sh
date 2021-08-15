@@ -14,6 +14,7 @@ UPDATE=true
 
 TMP_PKG_LIST="/tmp/godin_pkg_list"
 TMP_HOST_INFO="/tmp/godin_host_info"
+TMP_PAYLOAD="/tmp/godin_payload"
 
 usage() {
     echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
@@ -132,7 +133,8 @@ get_host_data() {
 	echo "{" >> $TMP_HOST_INFO
 	echo "	\"kernel\": \"$kernel_version\"," >> $TMP_HOST_INFO
 	echo "	\"architecture\": \"$architecture\"," >> $TMP_HOST_INFO
-	echo "	\"os\": \"$os\"" >> $TMP_HOST_INFO
+	echo "	\"os\": \"$os\"," >> $TMP_HOST_INFO
+	echo "	\"hostname\": \"$HOSTNAME\"" >> $TMP_HOST_INFO
 	echo "}" >> $TMP_HOST_INFO
 }
 
@@ -143,11 +145,16 @@ get_apt_packages() {
 
 	# Get list of installed package with "ii" status
 	packages_list=$(dpkg -l | grep "^ii" | awk '{print $2}')
+	packages_count=$(echo $"$packages_list" | wc -l)
+
+	echo "Found $packages_count installed packages"
 
 	echo "" > $TMP_PKG_LIST
 
 	echo "{" >> $TMP_PKG_LIST
+	i=0
 	for package in $packages_list; do 
+		i=$(expr $i + 1)
 		package_details=$(apt-cache policy ${package})
 		installed_ver=$(echo $"$package_details" | grep -i "installed" | awk '{print $2}')
 		candidate_ver=$(echo $"$package_details" | grep -i "candidate" | awk '{print $2}')
@@ -157,7 +164,7 @@ get_apt_packages() {
 		repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
 		repository_url=$(echo $repository_str | cut -f 2- -d ' ')
 
-
+		echo $package
 		if [ "$installed_ver" != "$candidate_ver" ]; then
 			# We print package + repo + candidate + candidate_repo
 			tmp_line_no=$(echo $"$package_details" | grep -n "$candidate_ver " | awk '{print $1}' FS=":")
@@ -173,7 +180,11 @@ get_apt_packages() {
 			echo "		\"version\": \"$candidate_ver\"," >> $TMP_PKG_LIST
 			echo "		\"repository\": \"$candidate_repository_url\"" >> $TMP_PKG_LIST
 			echo "	\"}\"" >> $TMP_PKG_LIST
-			echo "}," >> $TMP_PKG_LIST
+			if [ $i -eq $packages_count ]; then
+				echo "}" >> $TMP_PKG_LIST
+			else
+				echo "}," >> $TMP_PKG_LIST
+			fi
 		else
 			# We only print package + repo
 			echo "{" >> $TMP_PKG_LIST
@@ -181,13 +192,48 @@ get_apt_packages() {
 			echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
 			echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
 			echo "	\"upgradable\": \"no\"" >> $TMP_PKG_LIST
-			echo "}," >> $TMP_PKG_LIST
+			if [ $i -eq $packages_count ]; then
+				echo "}" >> $TMP_PKG_LIST
+			else
+				echo "}," >> $TMP_PKG_LIST
+			fi
 		fi
 	done
 	echo "}" >> $TMP_PKG_LIST
 }
 
 get_yum_packages() {
+	if $UPDATE; then
+		yum makecache
+	fi
+
+
+	declare -A repo_map
+
+	yum repoinfo | while read line; do
+		field_id=$(echo $line | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | awk -F':' '{print $1}')
+		field_val=$(echo $line | cut -d ':' -f 2- )
+		case "$field_id" in
+		    "repo-id")
+			repo_alias=$(echo $field_val | awk -F'/' '{print $1}' | tr -d '[:space:]')
+			key="${repo_alias}_id"
+			repo_map["$key"]="$field_val"
+		       ;;
+		   "repo-name")
+			key="${repo_alias}_name"
+			repo_map["$key"]="$field_val"
+		       ;;
+		   "repo-baseurl")
+			key="${repo_alias}_baseurl"
+			repo_map["$key"]=$(echo $field_val | awk '{print $1}' )
+		       ;;
+		esac
+	done
+
+
+	echo ${repo_map["base_id"]}
+
+
 }
 
 cleanup() {
@@ -207,8 +253,16 @@ get_host_data
 		get_yum_packages
 	fi
 
+	echo "" > $TMP_PAYLOAD
+
+	echo "{" >> $TMP_PAYLOAD
+	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
+	echo "," >> $TMP_PAYLOAD
+	cat $TMP_PKG_LIST >> $TMP_PAYLOAD
+	echo "}" >> $TMP_PAYLOAD
+
 if $VERBOSE; then
-	cat $TMP_HOST_INFO $TMP_PKG_LIST
+	cat $TMP_PAYLOAD
 fi
 
 #cleanup
