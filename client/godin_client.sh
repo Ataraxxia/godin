@@ -11,6 +11,7 @@ DEBUG=false
 TAGS=""
 CLIENT_HOSTNAME=`echo $HOSTNAME`
 UPDATE=true
+QUIET=false
 
 TMP_PKG_LIST="/tmp/godin_pkg_list"
 TMP_HOST_INFO="/tmp/godin_host_info"
@@ -26,13 +27,14 @@ usage() {
     echo "-c FILE: config file location (default is /etc/patchman/godin-client.conf)"
     echo "-t TAGS: comma-separated list of tags, e.g. -t www,dev"
     echo "-h HOSTNAME: specify the hostname of the local host"
+	echo "-q QUIET: Hide any output"
     echo
     echo "Command line options override config file options."
     exit 0
 }
 
 parseopts() {
-    while getopts "vdus:c:t:h:" opt; do
+    while getopts "vduqs:c:t:h:" opt; do
         case ${opt} in
         v)
             VERBOSE=true
@@ -41,9 +43,14 @@ parseopts() {
             DEBUG=true
             VERBOSE=true
             ;;
-	u)
-	    UPDATE=false
-	    ;;
+		q)
+			VERBOSE=false
+			DEBUG=false
+			QUIET=true
+			;;
+		u)
+	    	UPDATE=false
+	    	;;
         s)
             SERVER_URL=${OPTARG}
             ;;
@@ -148,12 +155,14 @@ get_apt_packages() {
 	packages_list=$(dpkg -l | grep "^ii")
 	packages_count=$(echo $"$packages_list" | wc -l)
 
-	echo "Found $packages_count installed packages"
+	if [ ! $QUIET ]; then
+		echo "Found $packages_count installed packages"
+	fi
 
-	echo "" > $TMP_REPO_INFO
+	truncate -s 0  $TMP_REPO_INFO
 	echo "\"packages\" : [" >> $TMP_PKG_LIST
 	i=0
-	for package in $packages_list; do 
+	dpkg -l | grep "^ii" | while read package; do
 		package_name=$(echo $package | awk '{print $2}')
 		package_arch=$(echo $package | awk '{print $4}')
 
@@ -167,7 +176,7 @@ get_apt_packages() {
 		repository_str=$(echo $"$package_details" | awk "NR==$tmp_line_no+1")
 		repository_url=$(echo $repository_str | cut -f 2- -d ' ')
 
-		echo $package
+
 		if [ "$installed_ver" != "$candidate_ver" ]; then
 			# We print package + repo + candidate + candidate_repo
 			tmp_line_no=$(echo $"$package_details" | grep -n "$candidate_ver " | awk '{print $1}' FS=":")
@@ -203,6 +212,7 @@ get_apt_packages() {
 				echo "}," >> $TMP_PKG_LIST
 			fi
 		fi
+
 	done
 	echo "]" >> $TMP_PKG_LIST
 }
@@ -215,7 +225,7 @@ get_yum_packages() {
 	# while loop will execute in current shell instead of a sub-shell
 	#shopt -s lastpipe 
 
-	echo "" > $TMP_REPO_INFO
+	truncate -s 0  $TMP_REPO_INFO
 	echo "\"repositories\" : [" >> $TMP_REPO_INFO
 	yum repoinfo | while read line; do
 		field_id=$(echo $line | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | awk -F':' '{print $1}')
@@ -231,7 +241,8 @@ get_yum_packages() {
 				echo "		\"repository_name\" : \"$field_val\"," >> $TMP_REPO_INFO
 		    	;;
 		   "repo-baseurl")
-		   		echo "		\"repository_baseurl\" : \"$field_val\"" >> $TMP_REPO_INFO
+		   		baseurl=$(echo $field_val | awk '{print $1}')
+		   		echo "		\"repository_baseurl\" : \"$baseurl\"" >> $TMP_REPO_INFO
 				echo "	}," >> $TMP_REPO_INFO
 		    	;;
 		esac
@@ -240,9 +251,12 @@ get_yum_packages() {
 
 	packages_count=$(repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | wc -l)
 	#upgrades_count=$(yum check-updates | grep -v ^$ | wc -l)
-	echo "Found $packages_count installed packages"
 
-	echo "" > $TMP_PKG_LIST
+	if [ ! $QUIET ]; then
+		echo "Found $packages_count installed packages"
+	fi
+
+	truncate -s 0 $TMP_PKG_LIST
 	echo "\"packages\" : [" >> $TMP_PKG_LIST
 
 	i=0
@@ -303,21 +317,17 @@ get_host_data
 		get_yum_packages
 	fi
 
-	echo "" > $TMP_PAYLOAD
+	truncate -s 0 $TMP_PAYLOAD
 
 	echo "{" >> $TMP_PAYLOAD
 	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
-	if [ $TMP_REPO_INFO != "" ]; then
+	if [ ! -s $TMP_REPO_INFO ]; then
 		cat $TMP_REPO_INFO >> $TMP_PAYLOAD
 		echo "," >> $TMP_PAYLOAD
 	fi
 	cat $TMP_PKG_LIST >> $TMP_PAYLOAD
 	echo "}" >> $TMP_PAYLOAD
-
-if $VERBOSE; then
-	cat $TMP_PAYLOAD
-fi
 
 #cleanup
 
