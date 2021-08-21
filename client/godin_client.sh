@@ -15,6 +15,7 @@ UPDATE=true
 TMP_PKG_LIST="/tmp/godin_pkg_list"
 TMP_HOST_INFO="/tmp/godin_host_info"
 TMP_PAYLOAD="/tmp/godin_payload"
+TMP_REPO_INFO="/tmp/godin_repo_info"
 
 usage() {
     echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
@@ -130,7 +131,7 @@ get_host_data() {
 
 	# Print JSON 
 	echo "" > $TMP_HOST_INFO
-	echo "{" >> $TMP_HOST_INFO
+	echo "\"host_info\" : {" >> $TMP_HOST_INFO
 	echo "	\"kernel\": \"$kernel_version\"," >> $TMP_HOST_INFO
 	echo "	\"architecture\": \"$architecture\"," >> $TMP_HOST_INFO
 	echo "	\"os\": \"$os\"," >> $TMP_HOST_INFO
@@ -140,22 +141,24 @@ get_host_data() {
 
 get_apt_packages() {
 	if $UPDATE; then
-		apt-get update
+		apt-get update -qq
 	fi
 
 	# Get list of installed package with "ii" status
-	packages_list=$(dpkg -l | grep "^ii" | awk '{print $2}')
+	packages_list=$(dpkg -l | grep "^ii")
 	packages_count=$(echo $"$packages_list" | wc -l)
 
 	echo "Found $packages_count installed packages"
 
-	echo "" > $TMP_PKG_LIST
-
-	echo "{" >> $TMP_PKG_LIST
+	echo "" > $TMP_REPO_INFO
+	echo "\"packages\" : [" >> $TMP_PKG_LIST
 	i=0
 	for package in $packages_list; do 
+		package_name=$(echo $package | awk '{print $2}')
+		package_arch=$(echo $package | awk '{print $4}')
+
 		i=$(expr $i + 1)
-		package_details=$(apt-cache policy ${package})
+		package_details=$(apt-cache policy ${package_name})
 		installed_ver=$(echo $"$package_details" | grep -i "installed" | awk '{print $2}')
 		candidate_ver=$(echo $"$package_details" | grep -i "candidate" | awk '{print $2}')
 
@@ -172,14 +175,16 @@ get_apt_packages() {
 			candidate_repository_url=$(echo $repository_str | cut -f 2- -d ' ')
 
 			echo "{" >> $TMP_PKG_LIST
-			echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
+			echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 			echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
+			echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
 			echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
-			echo "	\"upgradable\": \"yes\"," >> $TMP_PKG_LIST
-			echo "	\"candidate\": {" >> $TMP_PKG_LIST
-			echo "		\"version\": \"$candidate_ver\"," >> $TMP_PKG_LIST
-			echo "		\"repository\": \"$candidate_repository_url\"" >> $TMP_PKG_LIST
-			echo "	\"}\"" >> $TMP_PKG_LIST
+			echo "}," >> $TMP_PKG_LIST
+			echo "{" >> $TMP_PKG_LIST
+			echo "	\"upgrade\": \"yes\"," >> $TMP_PKG_LIST
+			echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST			
+			echo "	\"version\": \"$candidate_ver\"," >> $TMP_PKG_LIST
+			echo "	\"repository\": \"$candidate_repository_url\"" >> $TMP_PKG_LIST
 			if [ $i -eq $packages_count ]; then
 				echo "}" >> $TMP_PKG_LIST
 			else
@@ -188,10 +193,10 @@ get_apt_packages() {
 		else
 			# We only print package + repo
 			echo "{" >> $TMP_PKG_LIST
-			echo "	\"name\": \"$package\"," >> $TMP_PKG_LIST
+			echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 			echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
+			echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
 			echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
-			echo "	\"upgradable\": \"no\"" >> $TMP_PKG_LIST
 			if [ $i -eq $packages_count ]; then
 				echo "}" >> $TMP_PKG_LIST
 			else
@@ -199,40 +204,85 @@ get_apt_packages() {
 			fi
 		fi
 	done
-	echo "}" >> $TMP_PKG_LIST
+	echo "]" >> $TMP_PKG_LIST
 }
 
 get_yum_packages() {
 	if $UPDATE; then
-		yum makecache
+		yum makecache --quiet
 	fi
 
+	# while loop will execute in current shell instead of a sub-shell
+	#shopt -s lastpipe 
 
-	declare -A repo_map
-
+	echo "" > $TMP_REPO_INFO
+	echo "\"repositories\" : [" >> $TMP_REPO_INFO
 	yum repoinfo | while read line; do
 		field_id=$(echo $line | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | awk -F':' '{print $1}')
 		field_val=$(echo $line | cut -d ':' -f 2- )
 		case "$field_id" in
 		    "repo-id")
-			repo_alias=$(echo $field_val | awk -F'/' '{print $1}' | tr -d '[:space:]')
-			key="${repo_alias}_id"
-			repo_map["$key"]="$field_val"
+				repo_alias=$(echo $field_val | awk -F'/' '{print $1}' | tr -d '[:space:]')
+				echo "	{" >> $TMP_REPO_INFO
+				echo "		\"repository_alias\" : \"$repo_alias\"," >> $TMP_REPO_INFO
+				echo "		\"repository_id\" : \"$field_val\"," >> $TMP_REPO_INFO
 		       ;;
 		   "repo-name")
-			key="${repo_alias}_name"
-			repo_map["$key"]="$field_val"
-		       ;;
+				echo "		\"repository_name\" : \"$field_val\"," >> $TMP_REPO_INFO
+		    	;;
 		   "repo-baseurl")
-			key="${repo_alias}_baseurl"
-			repo_map["$key"]=$(echo $field_val | awk '{print $1}' )
-		       ;;
+		   		echo "		\"repository_baseurl\" : \"$field_val\"" >> $TMP_REPO_INFO
+				echo "	}," >> $TMP_REPO_INFO
+		    	;;
 		esac
 	done
+	echo "]" >> $TMP_REPO_INFO
 
+	packages_count=$(repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | wc -l)
+	#upgrades_count=$(yum check-updates | grep -v ^$ | wc -l)
+	echo "Found $packages_count installed packages"
 
-	echo ${repo_map["base_id"]}
+	echo "" > $TMP_PKG_LIST
+	echo "\"packages\" : [" >> $TMP_PKG_LIST
 
+	i=0
+	yum check-updates | grep -v ^$ | while read package; do
+		package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo $package | awk '{print $2}')
+		package_aliasrepo=$(echo $package | awk '{print $3}')
+
+		echo "{" >> $TMP_PKG_LIST
+		echo "	\"upgrade\": \"yes\"," >> $TMP_PKG_LIST
+		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
+		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
+		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
+		echo "	\"repository_alias\": \"$package_aliasrepo\"," >> $TMP_PKG_LIST
+		echo "}," >> $TMP_PKG_LIST
+	done
+
+	i=0
+    repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | while read package; do
+		i=$(expr $i + 1)
+
+        package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
+        package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
+        package_version=$(echo $package | awk '{print $2}')
+        package_aliasrepo=$(echo $package | awk '{print $3}')
+
+		echo "{" >> $TMP_PKG_LIST
+		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
+		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
+		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
+		echo "	\"repository_alias\": \"$package_aliasrepo\"," >> $TMP_PKG_LIST
+		if [ $i -eq $packages_count ]; then
+			echo "}" >> $TMP_PKG_LIST
+		else
+			echo "}," >> $TMP_PKG_LIST
+		fi
+    done
+
+	echo "]" >> $TMP_PKG_LIST
 
 }
 
@@ -258,6 +308,10 @@ get_host_data
 	echo "{" >> $TMP_PAYLOAD
 	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
+	if [ $TMP_REPO_INFO != "" ]; then
+		cat $TMP_REPO_INFO >> $TMP_PAYLOAD
+		echo "," >> $TMP_PAYLOAD
+	fi
 	cat $TMP_PKG_LIST >> $TMP_PAYLOAD
 	echo "}" >> $TMP_PAYLOAD
 
