@@ -1,20 +1,24 @@
 package main
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"flag"
+	"github.com/Ataraxxia/godin/postgresdb"
+	"io/ioutil"
+	"net/http"
 	"strings"
+
+	rep "github.com/Ataraxxia/godin/Report"
+	"github.com/golang/gddo/httputil/header"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
 
 type configuration struct {
-	Address		string
-	Port		string
-	LogLevel	string
-	DataPath	string
+	Address  string
+	Port     string
+	LogLevel string
+	DataPath string
 }
 
 const (
@@ -22,12 +26,11 @@ const (
 )
 
 var (
-	config * configuration
+	config *configuration
 )
 
 func loadConfig() {
 	flag.Parse()
-
 
 	f, err := ioutil.ReadFile("/etc/godin/settings.json")
 	if err != nil {
@@ -54,7 +57,10 @@ func main() {
 	var err error
 	loadConfig()
 
-	initDB()
+	err = postgresdb.InitDB()
+	if err != nil {
+		return
+	}
 
 	r := mux.NewRouter()
 	r.StrictSlash(true)
@@ -71,21 +77,30 @@ func getDefaultPage(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Godin"))
 }
 
-
 func uploadReport(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Getting new report")
-	if err := r.ParseMultipartForm(maxMemoryBytes); err != nil {
-		log.Error(err)
+
+	if r.Header.Get("Content-Type") != "" {
+		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
+		if value != "application/json" {
+			msg := "Content-Type header is not application/json"
+			http.Error(w, msg, http.StatusUnsupportedMediaType)
+			return
+		}
 	}
 
-	reportName, err := saveReport(r.Form)
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	var report rep.Report
+	err := dec.Decode(&report)
 	if err != nil {
 		log.Error(err)
+		w.Write([]byte("Godin says Json decoding error"))
+		return
 	}
 
-	log.Debugf("Report %s saved", reportName)
+	postgresdb.SaveReport(report)
 
 	w.Write([]byte("Godin says OK"))
 }
-
-

@@ -1,14 +1,14 @@
-package main
+package postgresdb
 
 import (
-    "database/sql"
-//    "database/sql/driver"
-//   "encoding/json"
-//    "errors"
-    "fmt"
+	"database/sql"
+	"time"
 
-    _ "github.com/lib/pq"
-    log "github.com/sirupsen/logrus"
+	"fmt"
+
+	rep "github.com/Ataraxxia/godin/Report"
+	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
 
 func checkTableExists(db *sql.DB, name string) bool {
@@ -20,8 +20,13 @@ func checkTableExists(db *sql.DB, name string) bool {
 	return exists
 }
 
-func initDB() error {
+func InitDB() error {
 	db, err := sql.Open("postgres", "postgres://godin:password@localhost/godin") //todo parametrize
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,6 +46,18 @@ func initDB() error {
 	}
 
 	log.Debug("DB init done")
+
+	return nil
+}
+
+func SaveReport(r rep.Report) error {
+	db, err := sql.Open("postgres", "postgres://godin:password@localhost/godin") //todo parametrize
+	if err != nil {
+		return err
+	}
+
+	reportTime := time.Now()
+	db.Exec("INSERT INTO reports (timestamp, report) VALUES ($1,$2)", reportTime, r)
 
 	return nil
 }

@@ -12,7 +12,7 @@ TAGS=""
 CLIENT_HOSTNAME=`echo $HOSTNAME`
 UPDATE=false
 QUIET=false
-SERVER_URL="http://godin.example.com"
+SERVER_URL="http://godin.example.com/reports/upload"
 
 TMP_PKG_LIST="/tmp/godin_pkg_list"
 TMP_HOST_INFO="/tmp/godin_host_info"
@@ -24,8 +24,8 @@ usage() {
     echo "-v: verbose output (default is silent)"
     echo "-d: debug output"
     echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
-    echo "-s SERVER: web server address, e.g. https://godin.example.com/upload"
-    echo "-c FILE: config file location (default is /etc/patchman/godin-client.conf)"
+    echo "-s SERVER: web server address, e.g. https://godin.example.com/reports/upload"
+    echo "-c FILE: config file location (default is /etc/godin/godin-client.conf)"
     echo "-t TAGS: comma-separated list of tags, e.g. -t www,dev"
     echo "-h HOSTNAME: specify the hostname of the local host"
 	echo "-q QUIET: Hide any output"
@@ -276,7 +276,7 @@ get_yum_packages() {
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
 		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
-		echo "	\"repository_alias\": \"$package_aliasrepo\"," >> $TMP_PKG_LIST
+		echo "	\"repository\": \"$package_aliasrepo\"," >> $TMP_PKG_LIST
 		echo "}," >> $TMP_PKG_LIST
 	done
 
