@@ -250,6 +250,7 @@ get_yum_packages() {
 		    	;;
 		esac
 	done
+	truncate -s-2 $TMP_REPO_INFO # Removing trailing comma
 	echo "]" >> $TMP_REPO_INFO
 
 	packages_count=$(repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | wc -l)
@@ -294,7 +295,7 @@ get_yum_packages() {
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
 		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
-		echo "	\"repository_alias\": \"$package_aliasrepo\"" >> $TMP_PKG_LIST
+		echo "	\"repository\": \"$package_aliasrepo\"" >> $TMP_PKG_LIST
 		if [ $i -eq $packages_count ]; then
 			echo "}" >> $TMP_PKG_LIST
 		else
