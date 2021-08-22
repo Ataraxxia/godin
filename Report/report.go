@@ -31,6 +31,7 @@ type HostInfo struct {
 type Report struct {
 	HostInfo       HostInfo     `json:"host_info"`
 	RepositoryType string       `json:"repo_type"`
+	Protocol       string       `json:"protocol"`
 	PackageManager string       `json:"package_manager"`
 	Tags           string       `json:"tags"`
 	Repositories   []Repository `json:"repositories,omitempty"`

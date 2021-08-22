@@ -97,7 +97,7 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 
-		if e, ok := err.(*json.SyntaxError); ok {
+		if e, err := err.(*json.SyntaxError); err {
 			log.Printf("syntax error at byte offset %d", e.Offset)
 		}
 
@@ -105,7 +105,10 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postgresdb.SaveReport(report)
+	err = postgresdb.SaveReport(report)
+	if err != nil {
+		log.Error(err)
+	}
 
 	w.Write([]byte("Godin says OK"))
 }

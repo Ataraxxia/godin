@@ -336,6 +336,7 @@ echo "{" >> $TMP_PAYLOAD
 	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
 	echo "\"tags\" : \"$TAGS\"," >> $TMP_PAYLOAD
+	echo "\"protocol\" : \"$PROTOCOL\"," >> $TMP_PAYLOAD
 	if [ -s $TMP_REPO_INFO ]; then
 		cat $TMP_REPO_INFO >> $TMP_PAYLOAD
 		echo "," >> $TMP_PAYLOAD
