@@ -10,8 +10,9 @@ VERBOSE=false
 DEBUG=false
 TAGS=""
 CLIENT_HOSTNAME=`echo $HOSTNAME`
-UPDATE=true
+UPDATE=false
 QUIET=false
+SERVER_URL="http://godin.example.com"
 
 TMP_PKG_LIST="/tmp/godin_pkg_list"
 TMP_HOST_INFO="/tmp/godin_host_info"
@@ -22,8 +23,8 @@ usage() {
     echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
     echo "-v: verbose output (default is silent)"
     echo "-d: debug output"
-    echo "-u: DO NOT automaticaly perform update using apt/yum"
-    echo "-s SERVER: web server address, e.g. https://godin.example.com"
+    echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
+    echo "-s SERVER: web server address, e.g. https://godin.example.com/upload"
     echo "-c FILE: config file location (default is /etc/patchman/godin-client.conf)"
     echo "-t TAGS: comma-separated list of tags, e.g. -t www,dev"
     echo "-h HOSTNAME: specify the hostname of the local host"
@@ -137,7 +138,7 @@ get_host_data() {
 	fi
 
 	# Print JSON 
-	echo "" > $TMP_HOST_INFO
+	truncate -s 0 $TMP_HOST_INFO
 	echo "\"host_info\" : {" >> $TMP_HOST_INFO
 	echo "	\"kernel\": \"$kernel_version\"," >> $TMP_HOST_INFO
 	echo "	\"architecture\": \"$architecture\"," >> $TMP_HOST_INFO
@@ -160,6 +161,8 @@ get_apt_packages() {
 	fi
 
 	truncate -s 0  $TMP_REPO_INFO
+	echo "\"repo_type\" : \"deb\"," >> $TMP_PKG_LIST
+	echo "\"package_manager\" : \"apt\"," >> $TMP_PKG_LIST
 	echo "\"packages\" : [" >> $TMP_PKG_LIST
 	i=0
 	dpkg -l | grep "^ii" | while read package; do
@@ -212,7 +215,7 @@ get_apt_packages() {
 				echo "}," >> $TMP_PKG_LIST
 			fi
 		fi
-
+		echo -ne "$i out of $packages_count \r"
 	done
 	echo "]" >> $TMP_PKG_LIST
 }
@@ -257,6 +260,8 @@ get_yum_packages() {
 	fi
 
 	truncate -s 0 $TMP_PKG_LIST
+	echo "\"repo_type\" : \"rpm\"," >> $TMP_PKG_LIST
+	echo "\"package_manager\" : \"yum\"," >> $TMP_PKG_LIST
 	echo "\"packages\" : [" >> $TMP_PKG_LIST
 
 	i=0
@@ -276,6 +281,7 @@ get_yum_packages() {
 	done
 
 	i=0
+	# simply listing with yum can possibly break some columns
     repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | while read package; do
 		i=$(expr $i + 1)
 
@@ -303,31 +309,40 @@ get_yum_packages() {
 cleanup() {
 	rm $TMP_HOST_INFO
 	rm $TMP_PKG_LIST
+	rm $TMP_REPO_INFO
+	rm $TMP_PAYLOAD
 }
 
+
+#################################
+#       MAIN                    #
+#################################
 
 parseopts "$@"
 check_requirements
 
 get_host_data
 
-	if check_command_exists apt-get; then
-		get_apt_packages
-	elif check_command_exists yum; then
-		get_yum_packages
-	fi
+if check_command_exists apt-get; then
+	get_apt_packages
+elif check_command_exists yum; then
+	get_yum_packages
+fi
 
-	truncate -s 0 $TMP_PAYLOAD
+truncate -s 0 $TMP_PAYLOAD
 
-	echo "{" >> $TMP_PAYLOAD
-	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
+echo "{" >> $TMP_PAYLOAD
+cat $TMP_HOST_INFO >> $TMP_PAYLOAD
+echo "," >> $TMP_PAYLOAD
+echo "\"tags\" : \"$TAGS\"," >> $TMP_PAYLOAD
+if [ -s $TMP_REPO_INFO ]; then
+	cat $TMP_REPO_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
-	if [ ! -s $TMP_REPO_INFO ]; then
-		cat $TMP_REPO_INFO >> $TMP_PAYLOAD
-		echo "," >> $TMP_PAYLOAD
-	fi
-	cat $TMP_PKG_LIST >> $TMP_PAYLOAD
-	echo "}" >> $TMP_PAYLOAD
+fi
+cat $TMP_PKG_LIST >> $TMP_PAYLOAD
+echo "}" >> $TMP_PAYLOAD
 
-#cleanup
+
+curl -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
+cleanup
 
