@@ -96,6 +96,11 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	err := dec.Decode(&report)
 	if err != nil {
 		log.Error(err)
+
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Printf("syntax error at byte offset %d", e.Offset)
+		}
+
 		w.Write([]byte("Godin says Json decoding error"))
 		return
 	}

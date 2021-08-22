@@ -190,7 +190,7 @@ get_apt_packages() {
 			echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 			echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
 			echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
-			echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
+			echo "	\"repository\": \"$repository_url\"" >> $TMP_PKG_LIST
 			echo "}," >> $TMP_PKG_LIST
 			echo "{" >> $TMP_PKG_LIST
 			echo "	\"upgrade\": \"yes\"," >> $TMP_PKG_LIST
@@ -208,7 +208,7 @@ get_apt_packages() {
 			echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 			echo "	\"version\": \"$installed_ver\"," >> $TMP_PKG_LIST
 			echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
-			echo "	\"repository\": \"$repository_url\"," >> $TMP_PKG_LIST
+			echo "	\"repository\": \"$repository_url\"" >> $TMP_PKG_LIST
 			if [ $i -eq $packages_count ]; then
 				echo "}" >> $TMP_PKG_LIST
 			else
@@ -276,7 +276,7 @@ get_yum_packages() {
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
 		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
-		echo "	\"repository\": \"$package_aliasrepo\"," >> $TMP_PKG_LIST
+		echo "	\"repository\": \"$package_aliasrepo\"" >> $TMP_PKG_LIST
 		echo "}," >> $TMP_PKG_LIST
 	done
 
@@ -294,7 +294,7 @@ get_yum_packages() {
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
 		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
 		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
-		echo "	\"repository_alias\": \"$package_aliasrepo\"," >> $TMP_PKG_LIST
+		echo "	\"repository_alias\": \"$package_aliasrepo\"" >> $TMP_PKG_LIST
 		if [ $i -eq $packages_count ]; then
 			echo "}" >> $TMP_PKG_LIST
 		else
@@ -332,14 +332,14 @@ fi
 truncate -s 0 $TMP_PAYLOAD
 
 echo "{" >> $TMP_PAYLOAD
-cat $TMP_HOST_INFO >> $TMP_PAYLOAD
-echo "," >> $TMP_PAYLOAD
-echo "\"tags\" : \"$TAGS\"," >> $TMP_PAYLOAD
-if [ -s $TMP_REPO_INFO ]; then
-	cat $TMP_REPO_INFO >> $TMP_PAYLOAD
+	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
-fi
-cat $TMP_PKG_LIST >> $TMP_PAYLOAD
+	echo "\"tags\" : \"$TAGS\"," >> $TMP_PAYLOAD
+	if [ -s $TMP_REPO_INFO ]; then
+		cat $TMP_REPO_INFO >> $TMP_PAYLOAD
+		echo "," >> $TMP_PAYLOAD
+	fi
+	cat $TMP_PKG_LIST >> $TMP_PAYLOAD
 echo "}" >> $TMP_PAYLOAD
 
 
