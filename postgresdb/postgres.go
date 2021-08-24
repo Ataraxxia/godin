@@ -37,6 +37,7 @@ func InitDB() error {
 		_, err = db.Exec(`CREATE TABLE reports(
 			id SERIAL PRIMARY KEY,
 			timestamp TIMESTAMP,
+			processed BOOLEAN,
 			report JSONB
 		);`)
 
@@ -57,7 +58,7 @@ func SaveReport(r rep.Report) error {
 	}
 
 	reportTime := time.Now().UTC()
-	_, err = db.Exec("INSERT INTO reports (timestamp, report) VALUES ($1,$2)", reportTime, r)
+	_, err = db.Exec("INSERT INTO reports (timestamp, report, processed) VALUES ($1,$2, FALSE)", reportTime, r)
 	if err != nil {
 		return err
 	}
