@@ -160,9 +160,10 @@ get_apt_packages() {
 		echo "Found $packages_count installed packages"
 	fi
 
-	truncate -s 0  $TMP_REPO_INFO
+	truncate -s 0  $TMP_PKG_LIST
 	echo "\"repo_type\" : \"deb\"," >> $TMP_PKG_LIST
 	echo "\"package_manager\" : \"apt\"," >> $TMP_PKG_LIST
+
 	echo "\"packages\" : [" >> $TMP_PKG_LIST
 	i=0
 	dpkg -l | grep "^ii" | while read package; do
@@ -271,7 +272,7 @@ get_yum_packages() {
 		package_version=$(echo $package | awk '{print $2}')
 		package_aliasrepo=$(echo $package | awk '{print $3}')
 
-		if [ $i -eq 0] && [ ! -z $package_name ] && [ $package_name == "Loaded" ]; then
+		if [ $i -eq 0 ] && [ ! -z $package_name ] && [ $package_name == "Loaded" ]; then
 			i=$(expr $i + 1)
 			continue
 		fi
