@@ -215,7 +215,6 @@ get_apt_packages() {
 				echo "}," >> $TMP_PKG_LIST
 			fi
 		fi
-		echo -ne "$i out of $packages_count \r"
 	done
 	echo "]" >> $TMP_PKG_LIST
 }
@@ -272,6 +271,11 @@ get_yum_packages() {
 		package_version=$(echo $package | awk '{print $2}')
 		package_aliasrepo=$(echo $package | awk '{print $3}')
 
+		if [ $i -eq 0] && [ ! -z $package_name ] && [ $package_name == "Loaded" ]; then
+			i=$(expr $i + 1)
+			continue
+		fi
+
 		echo "{" >> $TMP_PKG_LIST
 		echo "	\"upgrade\": \"yes\"," >> $TMP_PKG_LIST
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
@@ -304,7 +308,6 @@ get_yum_packages() {
     done
 
 	echo "]" >> $TMP_PKG_LIST
-
 }
 
 cleanup() {

@@ -110,5 +110,5 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 	}
 
-	w.Write([]byte("Godin says OK"))
+	w.Write([]byte("Godin says OK\n"))
 }
