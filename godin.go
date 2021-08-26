@@ -18,7 +18,6 @@ type configuration struct {
 	Address         string
 	Port            string
 	LogLevel        string
-	DataPath        string
 	SQLUser         string
 	SQLPassword     string
 	SQLDatabaseName string
@@ -50,12 +49,6 @@ func loadConfig() {
 	default:
 		log.SetLevel(log.InfoLevel)
 	}
-
-	// Remove trailing slash
-	if strings.HasSuffix(config.DataPath, "/") {
-		tmp := config.DataPath
-		config.DataPath = tmp[:len(tmp)-1]
-	}
 }
 
 func main() {
@@ -63,10 +56,10 @@ func main() {
 	loadConfig()
 
 	db = postgresdb.DB{
-		User:         config.SQLUser,
-		Password:     config.SQLPassword,
-		DatabaseName: config.SQLDatabaseName,
-		ServerAddres: config.SQLServerAddr,
+		User:          config.SQLUser,
+		Password:      config.SQLPassword,
+		DatabaseName:  config.SQLDatabaseName,
+		ServerAddress: config.SQLServerAddr,
 	}
 
 	err = db.InitDB()
