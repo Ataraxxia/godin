@@ -5,7 +5,7 @@ In current state GOdin can generate and store reports sent from its client. It i
 
 ## Compiling
 
-Only the server part of GOding requires compiliation, it can be done with:
+Only the server requires compiliation, it can be done with:
 
 ```
 	go get
@@ -30,7 +30,7 @@ Create `/etc/godin/settings.json` file and fill it according to your needs. Make
 {
         "Address": "0.0.0.0",
         "Port": "80",
-        "LogLevel": "DEBUG",
+        "LogLevel": "INFO",
 	"SQLUser": "godin",
 	"SQLPassword": "password",
 	"SQLDatabaseName": "godin",
@@ -38,7 +38,7 @@ Create `/etc/godin/settings.json` file and fill it according to your needs. Make
 }
 ```
 
-If you require HTTPS or more advanced setups it is preffered to youse reverse-proxy software such as Nginx or Apache.
+If you require HTTPS or more advanced setup it is currently suggested you use reverse-proxy software such as Nginx or Apache.
 
 ### Client
 
