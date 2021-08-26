@@ -11,6 +11,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type DB struct {
+	User          string
+	Password      string
+	DatabaseName  string
+	ServerAddress string
+}
+
 func checkTableExists(db *sql.DB, name string) bool {
 	var exists bool
 	err := db.QueryRow(fmt.Sprintf("SELECT EXISTS ( SELECT FROM pg_tables WHERE  schemaname = 'public' AND tablename = '%s' );", name)).Scan(&exists)
@@ -20,8 +27,9 @@ func checkTableExists(db *sql.DB, name string) bool {
 	return exists
 }
 
-func InitDB() error {
-	db, err := sql.Open("postgres", "postgres://godin:password@localhost/godin") //todo parametrize
+func (d DB) InitDB() error {
+	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", d.User, d.Password, d.ServerAddress, d.DatabaseName)
+	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,8 +59,9 @@ func InitDB() error {
 	return nil
 }
 
-func SaveReport(r rep.Report) error {
-	db, err := sql.Open("postgres", "postgres://godin:password@localhost/godin") //todo parametrize
+func (d DB) SaveReport(r rep.Report) error {
+	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", d.User, d.Password, d.ServerAddress, d.DatabaseName)
+	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		return err
 	}

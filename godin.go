@@ -15,10 +15,14 @@ import (
 )
 
 type configuration struct {
-	Address  string
-	Port     string
-	LogLevel string
-	DataPath string
+	Address         string
+	Port            string
+	LogLevel        string
+	DataPath        string
+	SQLUser         string
+	SQLPassword     string
+	SQLDatabaseName string
+	SQLServerAddr   string
 }
 
 const (
@@ -27,6 +31,7 @@ const (
 
 var (
 	config *configuration
+	db     postgresdb.DB
 )
 
 func loadConfig() {
@@ -57,7 +62,14 @@ func main() {
 	var err error
 	loadConfig()
 
-	err = postgresdb.InitDB()
+	db = postgresdb.DB{
+		User:         config.SQLUser,
+		Password:     config.SQLPassword,
+		DatabaseName: config.SQLDatabaseName,
+		ServerAddres: config.SQLServerAddr,
+	}
+
+	err = db.InitDB()
 	if err != nil {
 		return
 	}
@@ -105,7 +117,7 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgresdb.SaveReport(report)
+	err = db.SaveReport(report)
 	if err != nil {
 		log.Error(err)
 	}
