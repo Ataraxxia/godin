@@ -26,7 +26,7 @@ usage() {
     echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
     echo "-s SERVER: web server address, e.g. https://godin.example.com/reports/upload"
     echo "-c FILE: config file location (default is /etc/godin/godin-client.conf)"
-    echo "-t TAGS: comma-separated list of tags, e.g. -t www,dev"
+    echo "-t TAGS: comma-separated, no whitespace including list of tags, e.g. -t www,dev-vm"
     echo "-h HOSTNAME: specify the hostname of the local host"
 	echo "-q QUIET: Hide any output"
     echo
@@ -144,7 +144,7 @@ get_host_data() {
 	echo "	\"architecture\": \"$architecture\"," >> $TMP_HOST_INFO
 	echo "	\"os\": \"$os\"," >> $TMP_HOST_INFO
 	echo "	\"hostname\": \"$HOSTNAME\"" >> $TMP_HOST_INFO
-	echo "}" >> $TMP_HOST_INFO
+	echo -n "}" >> $TMP_HOST_INFO
 }
 
 get_apt_packages() {
@@ -339,7 +339,16 @@ truncate -s 0 $TMP_PAYLOAD
 echo "{" >> $TMP_PAYLOAD
 	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
-	echo "\"tags\" : \"$TAGS\"," >> $TMP_PAYLOAD
+
+	echo -n "\"tags\" : [" >> $TMP_PAYLOAD
+	if [ ! -z $TAGS ]; then
+		for tag in $(echo $TAGS | sed "s/,/ /g"); do
+			echo -n "\"$tag\"," >> $TMP_PAYLOAD
+		done
+		truncate -s-1 $TMP_PAYLOAD
+	fi
+	echo "]," >> $TMP_PAYLOAD
+
 	echo "\"protocol\" : \"$PROTOCOL\"," >> $TMP_PAYLOAD
 	if [ -s $TMP_REPO_INFO ]; then
 		cat $TMP_REPO_INFO >> $TMP_PAYLOAD
@@ -350,5 +359,5 @@ echo "}" >> $TMP_PAYLOAD
 
 
 curl -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
-cleanup
+#cleanup
 
