@@ -5,13 +5,14 @@
 export LC_ALL=C
 
 CONF_FILE=/etc/godin/godin-client.conf
-PROTOCOL=1
-VERBOSE=false
-DEBUG=false
+VERBOSE=0
+DEBUG=0
+UPDATE=0
+QUIET=0
+
+PROTOCOL="1"
 TAGS=""
-CLIENT_HOSTNAME=`echo $HOSTNAME`
-UPDATE=false
-QUIET=false
+CLIENT_HOSTNAME=$(echo $HOSTNAME)
 SERVER_URL="http://godin.example.com/reports/upload"
 
 TMP_PKG_LIST="/tmp/godin_pkg_list"
@@ -35,28 +36,38 @@ usage() {
 }
 
 parseopts() {
+
+	if [ -s $CONF_FILE ]; then
+		source "${CONF_FILE}"
+	fi
+
     while getopts "vduqs:c:t:h:" opt; do
         case ${opt} in
         v)
-            VERBOSE=true
+            VERBOSE=1
             ;;
         d)
-            DEBUG=true
-            VERBOSE=true
+            DEBUG=1
+            VERBOSE=1
             ;;
 		q)
-			VERBOSE=false
-			DEBUG=false
-			QUIET=true
+			VERBOSE=0
+			DEBUG=0
+			QUIET=1
 			;;
 		u)
-	    	UPDATE=false
+	    	UPDATE=0
 	    	;;
         s)
             SERVER_URL=${OPTARG}
             ;;
         c)
             CONF_FILE=${OPTARG}
+			if [ -s $CONF_FILE ]; then
+				source "${CONF_FILE}"
+			else
+				echo "Specified configuration file does not exist!"
+			fi
             ;;
         t)
             TAGS="${OPTARG}"
@@ -145,10 +156,18 @@ get_host_data() {
 	echo "	\"os\": \"$os\"," >> $TMP_HOST_INFO
 	echo "	\"hostname\": \"$HOSTNAME\"" >> $TMP_HOST_INFO
 	echo -n "}" >> $TMP_HOST_INFO
+
+	if [ $QUIET -eq 0 ]; then 
+		echo "Using hostname: $HOSTNAME"
+	fi
+
 }
 
 get_apt_packages() {
-	if $UPDATE; then
+	if [ $UPDATE -eq 1 ]; then
+		if [ $QUIET -eq 0 ]; then
+			echo "Running apt-get update"
+		fi
 		apt-get update -qq
 	fi
 
@@ -156,7 +175,7 @@ get_apt_packages() {
 	packages_list=$(dpkg -l | grep "^ii")
 	packages_count=$(echo $"$packages_list" | wc -l)
 
-	if [ ! $QUIET ]; then
+	if [ $QUIET  -eq 0 ]; then
 		echo "Found $packages_count installed packages"
 	fi
 
@@ -221,7 +240,7 @@ get_apt_packages() {
 }
 
 get_yum_packages() {
-	if $UPDATE; then
+	if [ $UPDATE -eq 1 ]; then
 		yum makecache --quiet
 	fi
 
@@ -256,7 +275,7 @@ get_yum_packages() {
 	packages_count=$(repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | wc -l)
 	#upgrades_count=$(yum check-updates | grep -v ^$ | wc -l)
 
-	if [ ! $QUIET ]; then
+	if [ $QUIET -eq 0 ]; then
 		echo "Found $packages_count installed packages"
 	fi
 
@@ -359,5 +378,5 @@ echo "}" >> $TMP_PAYLOAD
 
 
 curl -L -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
-#cleanup
+cleanup
 
