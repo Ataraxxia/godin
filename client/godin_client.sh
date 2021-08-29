@@ -358,6 +358,6 @@ echo "{" >> $TMP_PAYLOAD
 echo "}" >> $TMP_PAYLOAD
 
 
-curl -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
+curl -L -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
 #cleanup
 
