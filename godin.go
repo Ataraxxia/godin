@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"fmt"
 
 	rep "github.com/Ataraxxia/godin/Report"
 	"github.com/golang/gddo/httputil/header"
