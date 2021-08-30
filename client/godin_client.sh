@@ -291,7 +291,7 @@ get_yum_packages() {
 		package_version=$(echo $package | awk '{print $2}')
 		package_aliasrepo=$(echo $package | awk '{print $3}')
 
-		if [ $i -eq 0 ] && [ ! -z $package_name ] && [ $package_name == "Loaded" ]; then
+		if [ $i -eq 0 ] && [ ! -z "$package_name" ] && [ "$package_name" == "Loaded" ]; then
 			i=$(expr $i + 1)
 			continue
 		fi
@@ -360,7 +360,7 @@ echo "{" >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
 
 	echo -n "\"tags\" : [" >> $TMP_PAYLOAD
-	if [ ! -z $TAGS ]; then
+	if [ ! -z "$TAGS" ]; then
 		for tag in $(echo $TAGS | sed "s/,/ /g"); do
 			echo -n "\"$tag\"," >> $TMP_PAYLOAD
 		done
