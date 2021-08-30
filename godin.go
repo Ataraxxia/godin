@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"fmt"
 
 	rep "github.com/Ataraxxia/godin/Report"
 	"github.com/golang/gddo/httputil/header"
@@ -31,14 +32,18 @@ const (
 var (
 	config *configuration
 	db     postgresdb.DB
+
+	configFilePath = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
 )
 
 func loadConfig() {
 	flag.Parse()
 
-	f, err := ioutil.ReadFile("/etc/godin/settings.json")
+	fpath := fmt.Sprint(*configFilePath)
+
+	f, err := ioutil.ReadFile(fpath)
 	if err != nil {
-		log.Fatal("Coulnd't find /etc/godin/settings.json")
+		log.Fatal(fmt.Sprintf("Could not find configuration file %s", fpath))
 	}
 
 	err = json.Unmarshal([]byte(f), &config)
@@ -103,10 +108,10 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 
 		if e, err := err.(*json.SyntaxError); err {
-			log.Printf("syntax error at byte offset %d", e.Offset)
+			log.Printf("Syntax error at byte offset %d\n", e.Offset)
 		}
 
-		w.Write([]byte("Godin says Json decoding error"))
+		w.Write([]byte("Godin says Json decoding error\n"))
 		return
 	}
 
