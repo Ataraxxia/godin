@@ -3,7 +3,7 @@
 GOdin is an open source monitoring server and agent for linux systems. Its main feature is currently monitoring the state of installed packages.
 In current state GOdin can generate and store reports. It is intended to use with visualising software (ex. Grafana).
 
-## Hos does it work?
+## How does it work?
 
 GOdin client is a bash script that creates structured JSON report about system state and sends it via curl to the specified server. Report consists of basic host info, installed packages, package upgrades and in case of RPM based distros a section about repositories. The server validates and stores JSON as a report inside PostgresDB using JSONB column. From there visualisation tools are able to query for the data.
 
