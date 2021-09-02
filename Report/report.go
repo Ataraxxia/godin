@@ -33,7 +33,7 @@ type Report struct {
 	RepositoryType string       `json:"repo_type"`
 	Protocol       string       `json:"protocol"`
 	PackageManager string       `json:"package_manager"`
-	Tags           string       `json:"tags"`
+	Tags           []string     `json:"tags"`
 	Repositories   []Repository `json:"repositories,omitempty"`
 	Packages       []Package    `json:"packages"`
 }
