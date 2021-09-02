@@ -333,7 +333,9 @@ get_yum_packages() {
 cleanup() {
 	rm $TMP_HOST_INFO
 	rm $TMP_PKG_LIST
-	rm $TMP_REPO_INFO
+	if [ -s "$TMP_REPO_INFO" ]; then
+		rm $TMP_REPO_INFO
+	fi
 	rm $TMP_PAYLOAD
 }
 
