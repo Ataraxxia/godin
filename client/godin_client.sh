@@ -21,18 +21,18 @@ TMP_PAYLOAD="/tmp/godin_payload"
 TMP_REPO_INFO="/tmp/godin_repo_info"
 
 usage() {
-    echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
-    echo "-v: verbose output (default is silent)"
-    echo "-d: debug output"
-    echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
-    echo "-s SERVER: web server address, e.g. https://godin.example.com/reports/upload"
-    echo "-c FILE: config file location (default is /etc/godin/godin-client.conf)"
-    echo "-t TAGS: comma-separated, no whitespace including list of tags, e.g. -t www,dev-vm"
-    echo "-h HOSTNAME: specify the hostname of the local host"
+	echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
+	echo "-v: verbose output (default is silent)"
+	echo "-d: debug output"
+	echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
+	echo "-s SERVER: web server address, e.g. https://godin.example.com/reports/upload"
+	echo "-c FILE: config file location (default is /etc/godin/godin-client.conf)"
+	echo "-t TAGS: comma-separated, no whitespace including list of tags, e.g. -t www,dev-vm"
+	echo "-h HOSTNAME: specify the hostname of the local host"
 	echo "-q QUIET: Hide any output"
-    echo
-    echo "Command line options override config file options."
-    exit 0
+	echo
+	echo "Command line options override config file options."
+	exit 0
 }
 
 parseopts() {
@@ -41,45 +41,26 @@ parseopts() {
 		source "${CONF_FILE}"
 	fi
 
-    while getopts "vduqs:c:t:h:" opt; do
-        case ${opt} in
-        v)
-            VERBOSE=1
-            ;;
-        d)
-            DEBUG=1
-            VERBOSE=1
-            ;;
-		q)
-			VERBOSE=0
-			DEBUG=0
-			QUIET=1
-			;;
-		u)
-	    	UPDATE=0
-	    	;;
-        s)
-            SERVER_URL=${OPTARG}
-            ;;
-        c)
-            CONF_FILE=${OPTARG}
+	while getopts "vduqs:c:t:h:" opt; do
+		case ${opt} in
+		v) VERBOSE=1 ;;
+		d) DEBUG=1; VERBOSE=1 ;;
+		q) VERBOSE=0; DEBUG=0; QUIET=1 ;;
+		u) UPDATE=0 ;;
+		s) SERVER_URL=${OPTARG} ;;
+		c)
+			CONF_FILE=${OPTARG}
 			if [ -s $CONF_FILE ]; then
 				source "${CONF_FILE}"
 			else
 				echo "Specified configuration file does not exist!"
 			fi
-            ;;
-        t)
-            TAGS="${OPTARG}"
-            ;;
-        h)
-            CLIENT_HOSTNAME=${OPTARG}
-            ;;
-        *)
-            usage
-            ;;
-        esac
-    done
+			;;
+		t) TAGS="${OPTARG}" ;;
+		h) CLIENT_HOSTNAME=${OPTARG} ;;
+		*) usage ;;
+		esac
+	done
 }
 
 check_command_exists(){
@@ -123,7 +104,7 @@ get_host_data() {
 			os="${NAME} ${VERSION}"
 		fi
 	else
-	        releases="/etc/SuSE-release /etc/lsb-release /etc/debian_version /etc/fermi-release /etc/redhat-release /etc/fedora-release /etc/centos-release"
+		releases="/etc/SuSE-release /etc/lsb-release /etc/debian_version /etc/fermi-release /etc/redhat-release /etc/fedora-release /etc/centos-release"
 		for r in ${releases}; do 
 			if [ -f ${r} ]; then
 				case "${r}" in
@@ -253,20 +234,20 @@ get_yum_packages() {
 		field_id=$(echo $line | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | awk -F':' '{print $1}')
 		field_val=$(echo $line | cut -d ':' -f 2- )
 		case "$field_id" in
-		    "repo-id")
+			"repo-id")
 				repo_alias=$(echo $field_val | awk -F'/' '{print $1}' | tr -d '[:space:]')
 				echo "	{" >> $TMP_REPO_INFO
 				echo "		\"repository_alias\" : \"$repo_alias\"," >> $TMP_REPO_INFO
 				echo "		\"repository_id\" : \"$field_val\"," >> $TMP_REPO_INFO
-		       ;;
-		   "repo-name")
+				;;
+			"repo-name")
 				echo "		\"repository_name\" : \"$field_val\"," >> $TMP_REPO_INFO
-		    	;;
-		   "repo-baseurl")
-		   		baseurl=$(echo $field_val | awk '{print $1}')
-		   		echo "		\"repository_baseurl\" : \"$baseurl\"" >> $TMP_REPO_INFO
+				;;
+			"repo-baseurl")
+				baseurl=$(echo $field_val | awk '{print $1}')
+				echo "		\"repository_baseurl\" : \"$baseurl\"" >> $TMP_REPO_INFO
 				echo "	}," >> $TMP_REPO_INFO
-		    	;;
+				;;
 		esac
 	done
 	truncate -s-2 $TMP_REPO_INFO # Removing trailing comma
@@ -307,13 +288,13 @@ get_yum_packages() {
 
 	i=0
 	# simply listing with yum can possibly break some columns
-    repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | while read package; do
+	repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | while read package; do
 		i=$(expr $i + 1)
 
-        package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
-        package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
-        package_version=$(echo $package | awk '{print $2}')
-        package_aliasrepo=$(echo $package | awk '{print $3}')
+		package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo $package | awk '{print $2}')
+		package_aliasrepo=$(echo $package | awk '{print $3}')
 
 		echo "{" >> $TMP_PKG_LIST
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
@@ -325,7 +306,7 @@ get_yum_packages() {
 		else
 			echo "}," >> $TMP_PKG_LIST
 		fi
-    done
+	done
 
 	echo "]" >> $TMP_PKG_LIST
 }
@@ -381,4 +362,3 @@ echo "}" >> $TMP_PAYLOAD
 
 curl -L -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
 cleanup
-
