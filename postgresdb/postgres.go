@@ -46,7 +46,6 @@ func (d DB) InitDB() error {
 			id SERIAL PRIMARY KEY,
 			timestamp TIMESTAMP,
 			hostname VARCHAR (255),
-			processed BOOLEAN,
 			report JSONB
 		);`)
 
@@ -69,7 +68,7 @@ func (d DB) SaveReport(r rep.Report) error {
 	defer db.Close()
 
 	reportTime := time.Now().UTC()
-	_, err = db.Exec("INSERT INTO reports (timestamp, hostname, report, processed) VALUES ($1,$2,$3, FALSE)", reportTime, r.HostInfo.Hostname, r)
+	_, err = db.Exec("INSERT INTO reports (timestamp, hostname, report, processed) VALUES ($1,$2,$3)", reportTime, r.HostInfo.Hostname, r)
 	if err != nil {
 		return err
 	}
