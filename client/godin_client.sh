@@ -267,10 +267,10 @@ get_yum_packages() {
 
 	i=0
 	yum check-updates | grep -v ^$ | while read package; do
-		package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
-		package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
-		package_version=$(echo $package | awk '{print $2}')
-		package_aliasrepo=$(echo $package | awk '{print $3}')
+		package_name=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo "$package" | awk '{print $2}')
+		package_aliasrepo=$(echo "$package" | awk '{print $3}')
 
 		if [ $i -eq 0 ] && [ ! -z "$package_name" ] && [ "$package_name" == "Loaded" ]; then
 			i=$(expr $i + 1)
@@ -291,10 +291,10 @@ get_yum_packages() {
 	repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | while read package; do
 		i=$(expr $i + 1)
 
-		package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
-		package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
-		package_version=$(echo $package | awk '{print $2}')
-		package_aliasrepo=$(echo $package | awk '{print $3}')
+		package_name=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo "$package" | awk '{print $2}')
+		package_aliasrepo=$(echo "$package" | awk '{print $3}')
 
 		echo "{" >> $TMP_PKG_LIST
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
