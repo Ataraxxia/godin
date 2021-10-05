@@ -135,7 +135,7 @@ get_host_data() {
 	echo "	\"kernel\": \"$kernel_version\"," >> $TMP_HOST_INFO
 	echo "	\"architecture\": \"$architecture\"," >> $TMP_HOST_INFO
 	echo "	\"os\": \"$os\"," >> $TMP_HOST_INFO
-	echo "	\"hostname\": \"$HOSTNAME\"" >> $TMP_HOST_INFO
+	echo "	\"hostname\": \"$CLIENT_HOSTNAME\"" >> $TMP_HOST_INFO
 	echo -n "}" >> $TMP_HOST_INFO
 
 	if [ $QUIET -eq 0 ]; then 
