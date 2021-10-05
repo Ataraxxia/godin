@@ -65,6 +65,7 @@ func (d DB) SaveReport(r rep.Report) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	reportTime := time.Now().UTC()
 	_, err = db.Exec("INSERT INTO reports (timestamp, report, processed) VALUES ($1,$2, FALSE)", reportTime, r)
