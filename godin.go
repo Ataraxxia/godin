@@ -83,7 +83,7 @@ func main() {
 
 }
 
-func getDefaultPage(w http.ResponseWriter, r *http.Request) {
+func getDefaultPage(w http.ResponseWriter) {
 	w.Write([]byte("Godin"))
 }
 
