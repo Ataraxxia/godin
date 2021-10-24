@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/Ataraxxia/godin/postgresdb"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"fmt"
+
+	"github.com/Ataraxxia/godin/postgresdb"
 
 	rep "github.com/Ataraxxia/godin/Report"
 	"github.com/golang/gddo/httputil/header"
@@ -24,10 +25,6 @@ type configuration struct {
 	SQLDatabaseName string
 	SQLServerAddr   string
 }
-
-const (
-	maxMemoryBytes = 10485760 // 10MiB
-)
 
 var (
 	config *configuration
@@ -47,6 +44,9 @@ func loadConfig() {
 	}
 
 	err = json.Unmarshal([]byte(f), &config)
+	if err != nil {
+		log.Fatal("Configration file not proper JSON")
+	}
 	switch loglevel := strings.ToLower(config.LogLevel); loglevel {
 	case "debug":
 		log.SetLevel(log.DebugLevel)

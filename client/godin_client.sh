@@ -145,11 +145,20 @@ get_host_data() {
 }
 
 get_apt_packages() {
+	truncate -s 0  $TMP_PKG_LIST
+
 	if [ $UPDATE -eq 1 ]; then
 		if [ $QUIET -eq 0 ]; then
 			echo "Running apt-get update"
 		fi
+
 		apt-get update -qq
+
+		if [ $? -eq 0 ]; then
+			echo "\"repo_update_successful\" : true," >> $TMP_PKG_LIST
+		else
+			echo "\"repo_update_successful\" : false," >> $TMP_PKG_LIST
+		fi
 	fi
 
 	# Get list of installed package with "ii" status
@@ -160,7 +169,6 @@ get_apt_packages() {
 		echo "Found $packages_count installed packages"
 	fi
 
-	truncate -s 0  $TMP_PKG_LIST
 	echo "\"repo_type\" : \"deb\"," >> $TMP_PKG_LIST
 	echo "\"package_manager\" : \"apt\"," >> $TMP_PKG_LIST
 
@@ -221,14 +229,22 @@ get_apt_packages() {
 }
 
 get_yum_packages() {
+	truncate -s 0  $TMP_REPO_INFO
+	truncate -s 0 $TMP_PKG_LIST
+
 	if [ $UPDATE -eq 1 ]; then
 		yum makecache --quiet
+
+		if [ $? -eq 0 ]; then
+			echo "\"repo_update_successful\" : true," >> $TMP_PKG_LIST
+		else
+			echo "\"repo_update_successful\" : false," >> $TMP_PKG_LIST
+		fi
 	fi
 
 	# while loop will execute in current shell instead of a sub-shell
 	#shopt -s lastpipe 
 
-	truncate -s 0  $TMP_REPO_INFO
 	echo "\"repositories\" : [" >> $TMP_REPO_INFO
 	yum repoinfo | while read line; do
 		field_id=$(echo $line | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | awk -F':' '{print $1}')
@@ -260,17 +276,16 @@ get_yum_packages() {
 		echo "Found $packages_count installed packages"
 	fi
 
-	truncate -s 0 $TMP_PKG_LIST
 	echo "\"repo_type\" : \"rpm\"," >> $TMP_PKG_LIST
 	echo "\"package_manager\" : \"yum\"," >> $TMP_PKG_LIST
 	echo "\"packages\" : [" >> $TMP_PKG_LIST
 
 	i=0
 	yum check-updates | grep -v ^$ | while read package; do
-		package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
-		package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
-		package_version=$(echo $package | awk '{print $2}')
-		package_aliasrepo=$(echo $package | awk '{print $3}')
+		package_name=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo "$package" | awk '{print $2}')
+		package_aliasrepo=$(echo "$package" | awk '{print $3}')
 
 		if [ $i -eq 0 ] && [ ! -z "$package_name" ] && [ "$package_name" == "Loaded" ]; then
 			i=$(expr $i + 1)
@@ -291,10 +306,10 @@ get_yum_packages() {
 	repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | while read package; do
 		i=$(expr $i + 1)
 
-		package_name=$(echo $package | awk '{print $1}' | awk -F'.' '{print $1}')
-		package_arch=$(echo $package | awk '{print $1}' | awk -F'.' '{print $2}')
-		package_version=$(echo $package | awk '{print $2}')
-		package_aliasrepo=$(echo $package | awk '{print $3}')
+		package_name=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo "$package" | awk '{print $2}')
+		package_aliasrepo=$(echo "$package" | awk '{print $3}')
 
 		echo "{" >> $TMP_PKG_LIST
 		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
