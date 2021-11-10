@@ -26,17 +26,20 @@ type configuration struct {
 	SQLServerAddr   string
 }
 
+const (
+	VERSION = "Godin Server v1.1"
+)
+
 var (
 	config *configuration
 	db     postgresdb.DB
 
-	configFilePath = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
+	configFilePathPtr = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
+	versionPtr        = flag.Bool("version", false, "Display version and exit")
 )
 
 func loadConfig() {
-	flag.Parse()
-
-	fpath := fmt.Sprint(*configFilePath)
+	fpath := fmt.Sprint(*configFilePathPtr)
 
 	f, err := ioutil.ReadFile(fpath)
 	if err != nil {
@@ -58,6 +61,15 @@ func loadConfig() {
 
 func main() {
 	var err error
+	flag.Parse()
+
+	showVersion := *versionPtr
+
+	if showVersion == true {
+		fmt.Println(VERSION)
+		return
+	}
+
 	loadConfig()
 
 	db = postgresdb.DB{

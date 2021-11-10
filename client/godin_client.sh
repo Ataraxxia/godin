@@ -5,10 +5,10 @@
 export LC_ALL=C
 
 CONF_FILE=/etc/godin/godin-client.conf
-VERBOSE=0
 DEBUG=0
 UPDATE=0
 QUIET=0
+VERSION="Godin Client v1.1"
 
 PROTOCOL="1"
 TAGS=""
@@ -22,7 +22,7 @@ TMP_REPO_INFO="/tmp/godin_repo_info"
 
 usage() {
 	echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
-	echo "-v: verbose output (default is silent)"
+	echo "-v: print version and quit"
 	echo "-d: debug output"
 	echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
 	echo "-s SERVER: web server address, e.g. https://godin.example.com/reports/upload"
@@ -43,9 +43,12 @@ parseopts() {
 
 	while getopts "vduqs:c:t:h:" opt; do
 		case ${opt} in
-		v) VERBOSE=1 ;;
-		d) DEBUG=1; VERBOSE=1 ;;
-		q) VERBOSE=0; DEBUG=0; QUIET=1 ;;
+		v) 
+			echo $VERSION
+			exit
+			;;
+		d) DEBUG=1 ;;
+		q) DEBUG=0; QUIET=1 ;;
 		u) UPDATE=0 ;;
 		s) SERVER_URL=${OPTARG} ;;
 		c)
