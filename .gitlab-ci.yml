@@ -31,7 +31,7 @@ compile:
   stage: build
   script:
     - export BUILDVERSION=$(cat VERSION.txt)
-    - export BUILDTIME=$(date +"%s")
+    - export BUILDTIME=$(date +"%F_%T")
     - go build -race -ldflags "-extldflags '-static' -X 'main.BuildTime=$BUILDTIME' -X 'main.BuildVersion=$BUILDVERSION'" -o $CI_PROJECT_DIR/godin
     - mkdir -p $PACKAGE/usr/sbin
     - mkdir -p $PACKAGE/etc/godin
