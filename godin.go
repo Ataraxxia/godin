@@ -27,7 +27,7 @@ type configuration struct {
 }
 
 const (
-	VERSION = "Godin Server v1.1"
+	VERSION = "Godin Server v1.1.1"
 )
 
 var (
@@ -87,7 +87,7 @@ func main() {
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 	r.HandleFunc("/", getDefaultPage)
-	r.HandleFunc("/reports/upload/", uploadReport).Methods("POST")
+	r.HandleFunc("/reports/upload", uploadReport).Methods("POST")
 
 	log.Infof("Starting server %s:%s", config.Address, config.Port)
 	err = http.ListenAndServe(config.Address+":"+config.Port, r)
