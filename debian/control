@@ -1,0 +1,8 @@
+Maintainer: Ataraxxia <b.drogosiewicz@gmail.com>
+
+
+Package: godin-server
+Version: 1.1.1
+Architecture: amd64
+Description: Server accepting GOdin client reports
+Depends: postgresql-13
