@@ -27,7 +27,7 @@ type configuration struct {
 }
 
 const (
-	VERSION = "Godin Server v1.1"
+	VERSION = "Godin Server v1.1.1"
 )
 
 var (
