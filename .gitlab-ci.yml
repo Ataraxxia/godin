@@ -36,7 +36,7 @@ compile:
     - mkdir -p $PACKAGE/usr/sbin
     - mkdir -p $PACKAGE/etc/godin
     - mkdir -p $PACKAGE/DEBIAN
-    - cp -R debian/* $PACKAGE
+    - cp -R debian/* $PACKAGE/DEBIAN/
     - cp godin $PACKAGE/usr/sbin/
     - cp settings.json.example $PACKAGE/etc/godin/
     - dpkg-deb --build --root-owner-group $PACKAGE
