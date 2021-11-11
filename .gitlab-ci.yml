@@ -33,3 +33,4 @@ compile:
   artifacts:
     paths:
       - godin
+      - client/godin_client.sh
