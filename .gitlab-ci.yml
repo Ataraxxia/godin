@@ -3,7 +3,8 @@ image: golang:latest
 variables:
   # Please edit to your GitLab project
   REPO_NAME: gitlab.com/Ataraxxia/godin
-  PACKAGE: godin-server
+  SERVER_PACKAGE: godin-server
+  CLIENT_PACKAGE: godin-client
 
 # The problem is that to be able to use go get, one needs to put
 # the repository in the $GOPATH. So for example if your gitlab domain
@@ -27,21 +28,36 @@ format:
     - go vet $(go list ./... | grep -v /vendor/)
     - go test -race $(go list ./... | grep -v /vendor/)
 
-compile:
+build-server:
   stage: build
   script:
     - export BUILDVERSION=$(cat VERSION.txt)
     - export BUILDTIME=$(date +"%F_%T")
     - go build -race -ldflags "-extldflags '-static' -X 'main.BuildTime=$BUILDTIME' -X 'main.BuildVersion=$BUILDVERSION'" -o $CI_PROJECT_DIR/godin
-    - mkdir -p $PACKAGE/usr/sbin
-    - mkdir -p $PACKAGE/etc/godin
-    - mkdir -p $PACKAGE/DEBIAN
-    - cp -R debian/* $PACKAGE/DEBIAN/
-    - cp godin $PACKAGE/usr/sbin/
-    - cp settings.json.example $PACKAGE/etc/godin/
-    - dpkg-deb --build --root-owner-group $PACKAGE
+    - mkdir -p $SERVER_PACKAGE/usr/sbin
+    - mkdir -p $SERVER_PACKAGE/etc/godin
+    - mkdir -p $SERVER_PACKAGE/DEBIAN
+    - cp -R debian/* $SERVER_PACKAGE/DEBIAN/
+    - echo "Version: $BUILDVERSION" > $SERVER_PACKAGE/DEBIAN/control
+    - cp godin $SERVER_PACKAGE/usr/sbin/
+    - cp settings.json.example $SERVER_PACKAGE/etc/godin/
+    - dpkg-deb --build --root-owner-group $SERVER_PACKAGE
     - mkdir -p releases
-    - mv $PACKAGE.deb releases/${PACKAGE}_v${BUILDVERSION}_${BUILDTIME}-amd64.deb
+    - mv $SERVER_PACKAGE.deb releases/${SERVER_PACKAGE}_${BUILDVERSION}_amd64.deb
+
+build-client:
+  stage: build
+  script:
+    - export BUILDVERSION=$(cat client/VERSION.txt)
+    - mkdir -p $CLIENT_PACKAGE/usr/sbin
+    - mkdir -p $CLIENT_PACKAGE/etc/godin
+    - mkdir -p $CLIENT_PACKAGE/DEBIAN
+    - cp -R client/debian/* $CLIENT_PACKAGE/DEBIAN/
+    - echo "Version: $BUILDVERSION" > $CLIENT_PACKAGE/DEBIAN/control
+    - cp client/godin_client.sh $CLIENT_PACKAGE/usr/sbin/godin-client.sh
+    - dpkg-deb --build --root-owner-group $CLIENT_PACKAGE
+    - mkdir -p releases
+    - mv $CLIENT_PACKAGE.deb releases/${CLIENT_PACKAGE}_${BUILDVERSION}_all.deb
 
   artifacts:
     paths:
