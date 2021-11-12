@@ -45,6 +45,10 @@ build-server:
     - mkdir -p releases
     - mv $SERVER_PACKAGE.deb releases/${SERVER_PACKAGE}_${BUILDVERSION}_amd64.deb
 
+  artifacts:
+    paths:
+      - releases/*.deb
+
 build-client:
   stage: build
   script:
