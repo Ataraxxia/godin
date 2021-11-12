@@ -41,7 +41,7 @@ compile:
     - cp settings.json.example $PACKAGE/etc/godin/
     - dpkg-deb --build --root-owner-group $PACKAGE
     - mkdir -p releases
-    - mv $PACKAGE.deb releases/godin-server_$BUILDVERSION_$BUILDTIME-amd64.deb
+    - mv $PACKAGE.deb releases/${PACKAGE}_${BUILDVERSION}_${BUILDTIME}-amd64.deb
 
   artifacts:
     paths:
