@@ -38,7 +38,7 @@ build-server:
     - mkdir -p $SERVER_PACKAGE/etc/godin
     - mkdir -p $SERVER_PACKAGE/DEBIAN
     - cp -R debian/* $SERVER_PACKAGE/DEBIAN/
-    - echo "Version: $BUILDVERSION" > $SERVER_PACKAGE/DEBIAN/control
+    - "echo \"Version: $BUILDVERSION\" >> $SERVER_PACKAGE/DEBIAN/control"
     - cp godin $SERVER_PACKAGE/usr/sbin/
     - cp settings.json.example $SERVER_PACKAGE/etc/godin/
     - dpkg-deb --build --root-owner-group $SERVER_PACKAGE
@@ -53,7 +53,7 @@ build-client:
     - mkdir -p $CLIENT_PACKAGE/etc/godin
     - mkdir -p $CLIENT_PACKAGE/DEBIAN
     - cp -R client/debian/* $CLIENT_PACKAGE/DEBIAN/
-    - echo "Version: $BUILDVERSION" > $CLIENT_PACKAGE/DEBIAN/control
+    - "echo \"Version: $BUILDVERSION\" >> $CLIENT_PACKAGE/DEBIAN/control"
     - cp client/godin_client.sh $CLIENT_PACKAGE/usr/sbin/godin-client.sh
     - dpkg-deb --build --root-owner-group $CLIENT_PACKAGE
     - mkdir -p releases
