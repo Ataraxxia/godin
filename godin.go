@@ -26,11 +26,11 @@ type configuration struct {
 	SQLServerAddr   string
 }
 
-const (
-	VERSION = "Godin Server v1.1.1"
-)
 
 var (
+	BuildVersion string = ""
+	BuildTime    string = ""
+
 	config *configuration
 	db     postgresdb.DB
 
@@ -66,7 +66,7 @@ func main() {
 	showVersion := *versionPtr
 
 	if showVersion == true {
-		fmt.Println(VERSION)
+		fmt.Printf("Godin Server v%s\n", BuildVersion)
 		return
 	}
 
