@@ -1,0 +1,9 @@
+{
+	"Address": "0.0.0.0",
+	"Port": "80",
+	"LogLevel": "INFO",
+	"SQLUser": "godin",
+	"SQLPassword": "password",
+	"SQLDatabaseName": "godin",
+	"SQLServerAddress": "localhost"
+}

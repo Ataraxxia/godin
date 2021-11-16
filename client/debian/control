@@ -1,0 +1,5 @@
+Package: godin-client
+Maintainer: Ataraxxia <b.drogosiewicz@gmail.com>
+Architecture: amd64
+Description: Server accepting GOdin client reports
+Depends: curl

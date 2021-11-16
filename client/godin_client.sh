@@ -8,7 +8,7 @@ CONF_FILE=/etc/godin/godin-client.conf
 DEBUG=0
 UPDATE=0
 QUIET=0
-VERSION="Godin Client v1.1"
+VERSION=""
 
 PROTOCOL="1"
 TAGS=""
