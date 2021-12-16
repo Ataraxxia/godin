@@ -53,7 +53,7 @@ Place client script in your desired bin directory and call it periodically (usin
 You can modify settings in `/etc/godin/godin-client.conf`. The settings are loaded via sourcing, so do not place whitespace in between `=` signs.
 
 ```bash
-	CLIENT_HOSTNAME="myHostname"
-	SERVER_URL="http://godin.example.com/reports/upload"
-	TAGS="tag1,tag2"
+CLIENT_HOSTNAME="myHostname"
+SERVER_URL="http://godin.example.com/reports/upload"
+TAGS="tag1,tag2"
 ```
