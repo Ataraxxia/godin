@@ -8,7 +8,7 @@ CONF_FILE=/etc/godin/godin-client.conf
 DEBUG=0
 UPDATE=0
 QUIET=0
-VERSION="Godin Client v1.1"
+VERSION=""
 
 PROTOCOL="1"
 TAGS=""
@@ -23,7 +23,7 @@ TMP_REPO_INFO="/tmp/godin_repo_info"
 usage() {
 	echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
 	echo "-v: print version and quit"
-	echo "-d: debug output"
+	echo "-d: debug output, don't remove temporary files"
 	echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
 	echo "-s SERVER: web server address, e.g. https://godin.example.com/reports/upload"
 	echo "-c FILE: config file location (default is /etc/godin/godin-client.conf)"
@@ -379,4 +379,7 @@ echo "}" >> $TMP_PAYLOAD
 
 
 curl -L -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
-cleanup
+
+if [ $DEBUG -eq 0 ]; then 
+	cleanup
+fi
