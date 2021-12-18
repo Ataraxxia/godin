@@ -30,6 +30,7 @@ type HostInfo struct {
 
 type Report struct {
 	HostInfo       HostInfo     `json:"host_info"`
+	RebootRequired	string		`json:"reboot_required"`
 	RepositoryType string       `json:"repo_type"`
 	Protocol       string       `json:"protocol"`
 	PackageManager string       `json:"package_manager"`

@@ -59,7 +59,7 @@ build-client:
     - cp -R client/debian/* $CLIENT_PACKAGE/DEBIAN/
     - "echo \"Version: $BUILDVERSION\" >> $CLIENT_PACKAGE/DEBIAN/control"
     - sed -i "s/VERSION=.*/VERSION=\"$BUILDVERSION\"/g" client/godin_client.sh 
-    - cp client/godin_client.sh $CLIENT_PACKAGE/usr/sbin/godin-client.sh
+    - cp client/godin_client.sh $CLIENT_PACKAGE/usr/sbin/godin-client
     - dpkg-deb --build --root-owner-group $CLIENT_PACKAGE
     - mkdir -p releases
     - mv $CLIENT_PACKAGE.deb releases/${CLIENT_PACKAGE}_${BUILDVERSION}_all.deb

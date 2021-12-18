@@ -23,7 +23,7 @@ TMP_REPO_INFO="/tmp/godin_repo_info"
 usage() {
 	echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
 	echo "-v: print version and quit"
-	echo "-d: debug output"
+	echo "-d: debug output, don't remove temporary files"
 	echo "-u: refresh repository cache using apt-get update/yum makecache, requires root privileges"
 	echo "-s SERVER: web server address, e.g. https://godin.example.com/reports/upload"
 	echo "-c FILE: config file location (default is /etc/godin/godin-client.conf)"
@@ -329,6 +329,23 @@ get_yum_packages() {
 	echo "]" >> $TMP_PKG_LIST
 }
 
+check_reboot_required() {
+	reboot=0
+	if check_command_exists needs-restarting ; then
+		if [[ $(needs-restarting -r >/dev/null) -eq 1 ]]; then
+			reboot=1
+		fi
+	elif check_command_exists dnf ; then
+		if [[ $(dnf needs-restarting -r >/dev/null) -eq 1 ]]; then
+			reboot=1
+		fi
+	elif [ -f /var/run/reboot-required ]; then
+		reboot=1
+	fi
+
+	return $reboot
+}
+
 cleanup() {
 	rm $TMP_HOST_INFO
 	rm $TMP_PKG_LIST
@@ -360,6 +377,12 @@ echo "{" >> $TMP_PAYLOAD
 	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
 
+	if check_reboot_required ; then
+		echo "\"reboot_required\": \"yes\"," >> $TMP_PAYLOAD
+	else
+		echo "\"reboot_required\": \"no\"," >> $TMP_PAYLOAD
+	fi
+
 	echo -n "\"tags\" : [" >> $TMP_PAYLOAD
 	if [ ! -z "$TAGS" ]; then
 		for tag in $(echo $TAGS | sed "s/,/ /g"); do
@@ -379,4 +402,7 @@ echo "}" >> $TMP_PAYLOAD
 
 
 curl -L -X POST -H "Content-Type: application/json" -d @$TMP_PAYLOAD $SERVER_URL
-cleanup
+
+if [ $DEBUG -eq 0 ]; then 
+	cleanup
+fi
