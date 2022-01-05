@@ -329,6 +329,23 @@ get_yum_packages() {
 	echo "]" >> $TMP_PKG_LIST
 }
 
+check_reboot_required() {
+	reboot=0
+	if check_command_exists needs-restarting ; then
+		if [[ $(needs-restarting -r >/dev/null) -eq 1 ]]; then
+			reboot=1
+		fi
+	elif check_command_exists dnf ; then
+		if [[ $(dnf needs-restarting -r >/dev/null) -eq 1 ]]; then
+			reboot=1
+		fi
+	elif [ -f /var/run/reboot-required ]; then
+		reboot=1
+	fi
+
+	return $reboot
+}
+
 cleanup() {
 	rm $TMP_HOST_INFO
 	rm $TMP_PKG_LIST
@@ -359,6 +376,12 @@ truncate -s 0 $TMP_PAYLOAD
 echo "{" >> $TMP_PAYLOAD
 	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
 	echo "," >> $TMP_PAYLOAD
+
+	if check_reboot_required ; then
+		echo "\"reboot_required\": \"yes\"," >> $TMP_PAYLOAD
+	else
+		echo "\"reboot_required\": \"no\"," >> $TMP_PAYLOAD
+	fi
 
 	echo -n "\"tags\" : [" >> $TMP_PAYLOAD
 	if [ ! -z "$TAGS" ]; then
