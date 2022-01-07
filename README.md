@@ -14,7 +14,6 @@ A sample Grafana dashboard can be aquired **[here](https://grafana.com/grafana/d
 Current versioning schema assumes compatibility between server and client that match first two decimal points, for example:
 
 ```
-
 +----------+-----------+--------------+
 |  server  |  client   |  compatible  |
 |----------+-----------+--------------|
@@ -22,7 +21,6 @@ Current versioning schema assumes compatibility between server and client that m
 |  1.2.1   |  1.2.3    |     yes      |
 |  1.3     |  1.2.5    |     no       |
 +----------------------+--------------+
-
 ```
 
 ## Compiling
