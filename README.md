@@ -9,6 +9,22 @@ GOdin client is a bash script that creates structured JSON report about system s
 
 A sample Grafana dashboard can be aquired **[here](https://grafana.com/grafana/dashboards/14939)**
 
+## Compatiblity between versions
+
+Current versioning schema assumes compatibility between server and client that match first two decimal points, for example:
+
+```
+
++----------+-----------+--------------+
+|  server  |  client   |  compatible  |
+|----------+-----------+--------------|
+|  1.0     |  1.0      |     yes      |
+|  1.2.1   |  1.2.3    |     yes      |
+|  1.3     |  1.2.5    |     no       |
++----------------------+--------------+
+
+```
+
 ## Compiling
 
 Only the server requires compiliation, it can be done with:
