@@ -2,4 +2,3 @@ Package: godin-server
 Maintainer: Ataraxxia <fabulousmcc@gmail.com>
 Architecture: amd64
 Description: Server accepting GOdin client reports
-Depends: postgresql-13
