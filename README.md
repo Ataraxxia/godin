@@ -54,7 +54,7 @@ Create `/etc/godin/settings.json` file and fill it according to your needs. Make
 	"SQLUser": "godin",
 	"SQLPassword": "password",
 	"SQLDatabaseName": "godin",
-	"SQLServerAddress": "localhost"
+	"SQLServerAddr": "localhost"
 }
 ```
 
