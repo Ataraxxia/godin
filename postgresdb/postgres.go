@@ -27,9 +27,13 @@ func checkTableExists(db *sql.DB, name string) bool {
 	return exists
 }
 
-func (d DB) InitDB() error {
+func (d DB) getConnString() {
 	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", d.User, d.Password, d.ServerAddress, d.DatabaseName)
-	db, err := sql.Open("postgres", connString)
+	return connString
+}
+
+func (d DB) InitDB() error {
+	db, err := sql.Open("postgres", d.getConnString())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,8 +64,7 @@ func (d DB) InitDB() error {
 }
 
 func (d DB) SaveReport(r rep.Report) error {
-	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", d.User, d.Password, d.ServerAddress, d.DatabaseName)
-	db, err := sql.Open("postgres", connString)
+	db, err := sql.Open("postgres", d.getConnString())
 	if err != nil {
 		return err
 	}
