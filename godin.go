@@ -81,7 +81,7 @@ func main() {
 
 	err = db.InitDB()
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 
 	r := mux.NewRouter()
@@ -92,7 +92,6 @@ func main() {
 	log.Infof("Starting server %s:%s", config.Address, config.Port)
 	err = http.ListenAndServe(config.Address+":"+config.Port, r)
 	log.Info(err)
-
 }
 
 func getDefaultPage(w http.ResponseWriter, r *http.Request) {
