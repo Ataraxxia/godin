@@ -3,7 +3,6 @@ package postgresdb
 import (
 	"database/sql"
 	"time"
-
 	"fmt"
 
 	rep "github.com/Ataraxxia/godin/Report"
@@ -27,13 +26,14 @@ func checkTableExists(db *sql.DB, name string) bool {
 	return exists
 }
 
-func (d DB) getConnString() {
+func (d DB) getConnString() string {
 	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", d.User, d.Password, d.ServerAddress, d.DatabaseName)
 	return connString
 }
 
 func (d DB) InitDB() error {
-	db, err := sql.Open("postgres", d.getConnString())
+	cs := d.getConnString()
+	db, err := sql.Open("postgres", cs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,15 +63,15 @@ func (d DB) InitDB() error {
 	return nil
 }
 
-func (d DB) SaveReport(r rep.Report) error {
-	db, err := sql.Open("postgres", d.getConnString())
+func (d DB) SaveReport(r rep.Report, t time.Time) error {
+	cs := d.getConnString()
+	db, err := sql.Open("postgres", cs)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	reportTime := time.Now().UTC()
-	_, err = db.Exec("INSERT INTO reports (timestamp, hostname, report) VALUES ($1,$2,$3)", reportTime, r.HostInfo.Hostname, r)
+	_, err = db.Exec("INSERT INTO reports (timestamp, hostname, report) VALUES ($1,$2,$3)", t, r.HostInfo.Hostname, r)
 	if err != nil {
 		return err
 	}

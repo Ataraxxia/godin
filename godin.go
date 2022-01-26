@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"time"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -126,7 +127,8 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = db.SaveReport(report)
+	t := time.Now().UTC()
+	err = db.SaveReport(report, t)
 	if err != nil {
 		log.Error(err)
 	}
