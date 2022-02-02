@@ -76,6 +76,9 @@ func (d DB) getDatabaseHandle() (*sql.DB, error) {
 
 func (d DB) SaveReport(r rep.Report, t time.Time) error {
 	db, err := d.getDatabaseHandle()
+	if err != nil {
+		return err
+	}
 	defer db.Close()
 
 	_, err = db.Exec("INSERT INTO reports (timestamp, hostname, report) VALUES ($1,$2,$3)", t, r.HostInfo.Hostname, r)
