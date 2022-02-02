@@ -135,7 +135,7 @@ func TestInitializeDatabase(t *testing.T) {
 }
 
 func TestSaveReport(t *testing.T) {
-	const testdatapath string = "../testdata/"
+	const testdatapath string = "../testdata/postgredb/"
 	testtable := []struct {
 		file     string
 		expected bool
