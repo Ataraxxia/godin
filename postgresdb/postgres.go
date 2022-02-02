@@ -2,10 +2,10 @@ package postgresdb
 
 import (
 	"database/sql"
-	"time"
 	"fmt"
+	"time"
 
-	rep "github.com/Ataraxxia/godin/Report"
+	rep "github.com/Ataraxxia/godin/report"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
@@ -15,36 +15,28 @@ type DB struct {
 	Password      string
 	DatabaseName  string
 	ServerAddress string
+	MockDB        *sql.DB
 }
 
-func checkTableExists(db *sql.DB, name string) bool {
+func checkTableExists(db *sql.DB, name string) (bool, error) {
 	var exists bool
 	err := db.QueryRow(fmt.Sprintf("SELECT EXISTS ( SELECT FROM pg_tables WHERE  schemaname = 'public' AND tablename = '%s' );", name)).Scan(&exists)
 	if err != nil {
-		log.Error(err)
+		return false, err
 	}
-	return exists
+	return exists, nil
 }
 
-func (d DB) getConnString() string {
-	connString := fmt.Sprintf("postgres://%s:%s@%s/%s", d.User, d.Password, d.ServerAddress, d.DatabaseName)
-	return connString
-}
+func (d DB) InitializeDatabase() error {
+	db, err := d.getDatabaseHandle()
 
-func (d DB) InitDB() error {
-	cs := d.getConnString()
-	db, err := sql.Open("postgres", cs)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	defer db.Close()
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if checkTableExists(db, "reports") == false {
-		log.Debug("Initialising DB")
+	if v, err := checkTableExists(db, "reports"); err == nil && v == false {
+		log.Debug("Initialising PostgreSQL database")
 
 		_, err = db.Exec(`CREATE TABLE reports(
 			id SERIAL PRIMARY KEY,
@@ -54,21 +46,36 @@ func (d DB) InitDB() error {
 		);`)
 
 		if err != nil {
-			log.Error(err)
+			return err
 		}
+	} else {
+		return err
 	}
-
-	log.Debug("DB init done")
-
 	return nil
 }
 
-func (d DB) SaveReport(r rep.Report, t time.Time) error {
-	cs := d.getConnString()
-	db, err := sql.Open("postgres", cs)
-	if err != nil {
-		return err
+func (d DB) getDatabaseHandle() (*sql.DB, error) {
+
+	if d.MockDB != nil {
+		return d.MockDB, nil
 	}
+
+	connString := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", d.ServerAddress, d.User, d.Password, d.DatabaseName)
+	db, err := sql.Open("postgres", connString)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func (d DB) SaveReport(r rep.Report, t time.Time) error {
+	db, err := d.getDatabaseHandle()
 	defer db.Close()
 
 	_, err = db.Exec("INSERT INTO reports (timestamp, hostname, report) VALUES ($1,$2,$3)", t, r.HostInfo.Hostname, r)

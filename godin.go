@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"time"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Ataraxxia/godin/postgresdb"
 
-	rep "github.com/Ataraxxia/godin/Report"
+	rep "github.com/Ataraxxia/godin/report"
 	"github.com/golang/gddo/httputil/header"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -27,7 +27,6 @@ type configuration struct {
 	SQLServerAddr   string
 }
 
-
 var (
 	BuildVersion string = ""
 	BuildTime    string = ""
@@ -39,17 +38,15 @@ var (
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
 )
 
-func loadConfig() {
-	fpath := fmt.Sprint(*configFilePathPtr)
-
+func loadConfig(fpath string) error {
 	f, err := ioutil.ReadFile(fpath)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("Could not find configuration file %s", fpath))
+		return err
 	}
 
 	err = json.Unmarshal([]byte(f), &config)
 	if err != nil {
-		log.Fatal("Configration file not proper JSON")
+		return err
 	}
 	switch loglevel := strings.ToLower(config.LogLevel); loglevel {
 	case "debug":
@@ -58,29 +55,33 @@ func loadConfig() {
 	default:
 		log.SetLevel(log.InfoLevel)
 	}
+
+	return nil
 }
 
 func main() {
 	var err error
 	flag.Parse()
 
-	showVersion := *versionPtr
-
-	if showVersion == true {
+	if *versionPtr {
 		fmt.Printf("Godin Server v%s\n", BuildVersion)
 		return
 	}
 
-	loadConfig()
+	fpath := fmt.Sprintf(*configFilePathPtr)
+	if err = loadConfig(fpath); err != nil {
+		log.Fatal(err)
+	}
 
 	db = postgresdb.DB{
 		User:          config.SQLUser,
 		Password:      config.SQLPassword,
 		DatabaseName:  config.SQLDatabaseName,
 		ServerAddress: config.SQLServerAddr,
+		MockDB:        nil,
 	}
 
-	err = db.InitDB()
+	err = db.InitializeDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
