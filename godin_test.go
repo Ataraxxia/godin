@@ -60,7 +60,7 @@ func TestUploadReport(t *testing.T) {
 		}
 
 		if string(data) != "Godin says OK\n" {
-			t.Errorf("expected 'Godin says ok', got %v", err)
+			t.Errorf("expected 'Godin says ok', got %v", string(data))
 		}
 	}
 }

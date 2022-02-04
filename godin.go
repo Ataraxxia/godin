@@ -128,11 +128,16 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Debugf("Saving report from %s", report.HostInfo.Hostname)
+
 	t := time.Now().UTC()
 	err = db.SaveReport(report, t)
 	if err != nil {
 		log.Error(err)
-	}
+		w.Write([]byte("Godin says server side error\n"))
+	} else {
 
-	w.Write([]byte("Godin says OK\n"))
+		w.Write([]byte("Godin says OK\n"))
+	}
+	return
 }
