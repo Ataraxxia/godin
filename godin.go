@@ -38,6 +38,13 @@ var (
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
 )
 
+const (
+	MSG_OK                = "Godin OK"
+	MSG_SERVER_ERROR      = "Server side error"
+	MSG_JSON_ERROR        = "Error decoding JSON"
+	MSG_JSON_HEADER_ERROR = "Content-Type header is not application/json"
+)
+
 func loadConfig(fpath string) error {
 	f, err := ioutil.ReadFile(fpath)
 	if err != nil {
@@ -97,7 +104,7 @@ func main() {
 }
 
 func getDefaultPage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Godin"))
+	http.Error(w, MSG_OK, http.StatusOK)
 }
 
 func uploadReport(w http.ResponseWriter, r *http.Request) {
@@ -106,8 +113,7 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
-			msg := "Content-Type header is not application/json"
-			http.Error(w, msg, http.StatusUnsupportedMediaType)
+			http.Error(w, MSG_JSON_HEADER_ERROR, http.StatusUnsupportedMediaType)
 			return
 		}
 	}
@@ -123,8 +129,7 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		if e, err := err.(*json.SyntaxError); err {
 			log.Printf("Syntax error at byte offset %d\n", e.Offset)
 		}
-
-		w.Write([]byte("Godin says Json decoding error\n"))
+		http.Error(w, MSG_JSON_ERROR, http.StatusBadRequest)
 		return
 	}
 
@@ -134,10 +139,9 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	err = db.SaveReport(report, t)
 	if err != nil {
 		log.Error(err)
-		w.Write([]byte("Godin says server side error\n"))
+		http.Error(w, MSG_SERVER_ERROR, http.StatusInternalServerError)
 	} else {
-
-		w.Write([]byte("Godin says OK\n"))
+		http.Error(w, MSG_OK, http.StatusOK)
 	}
 	return
 }
