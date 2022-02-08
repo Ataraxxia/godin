@@ -18,13 +18,14 @@ import (
 )
 
 type configuration struct {
-	Address         string
-	Port            string
-	LogLevel        string
-	SQLUser         string
-	SQLPassword     string
-	SQLDatabaseName string
-	SQLServerAddr   string
+	Address          string
+	Port             string
+	LogLevel         string
+	SQLUser          string
+	SQLPassword      string
+	SQLDatabaseName  string
+	SQLServerAddress string
+	SQLPort          string
 }
 
 var (
@@ -84,7 +85,8 @@ func main() {
 		User:          config.SQLUser,
 		Password:      config.SQLPassword,
 		DatabaseName:  config.SQLDatabaseName,
-		ServerAddress: config.SQLServerAddr,
+		ServerAddress: config.SQLServerAddress,
+		ServerPort:    config.SQLPort,
 		MockDB:        nil,
 	}
 

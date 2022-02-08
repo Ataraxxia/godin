@@ -15,6 +15,7 @@ type DB struct {
 	Password      string
 	DatabaseName  string
 	ServerAddress string
+	ServerPort    string
 	MockDB        *sql.DB
 }
 
@@ -60,7 +61,7 @@ func (d DB) getDatabaseHandle() (*sql.DB, error) {
 		return d.MockDB, nil
 	}
 
-	connString := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", d.ServerAddress, d.User, d.Password, d.DatabaseName)
+	connString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", d.ServerAddress, d.ServerPort, d.User, d.Password, d.DatabaseName)
 	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		return nil, err
