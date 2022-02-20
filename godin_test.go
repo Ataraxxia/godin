@@ -5,11 +5,26 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"time"
 
 	"testing"
 
+	rep "github.com/Ataraxxia/godin/report"
 	log "github.com/sirupsen/logrus"
 )
+
+type MockDB struct {
+	initializeDatabaseErr error
+	saveReportErr         error
+}
+
+func (m MockDB) InitializeDatabase() error {
+	return m.initializeDatabaseErr
+}
+
+func (m MockDB) SaveReport(r rep.Report, t time.Time) error {
+	return m.initializeDatabaseErr
+}
 
 func TestGetDefaultPage(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -33,12 +48,17 @@ func TestUploadReport(t *testing.T) {
 	const testdatapath string = "testdata/godin/"
 	testtable := []struct {
 		file     string
-		expected bool
+		expected error
 	}{
 		{
 			file:     "apt_report_ok_1.json",
-			expected: true,
+			expected: nil,
 		},
+	}
+
+	db = MockDB{
+		initializeDatabaseErr: nil,
+		saveReportErr:         nil,
 	}
 
 	for _, tc := range testtable {
