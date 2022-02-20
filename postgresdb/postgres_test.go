@@ -138,11 +138,11 @@ func TestSaveReport(t *testing.T) {
 	const testdatapath string = "../testdata/postgredb/"
 	testtable := []struct {
 		file     string
-		expected bool
+		expected error
 	}{
 		{
 			file:     "apt_report_ok_1.json",
-			expected: true,
+			expected: nil,
 		},
 	}
 
@@ -184,14 +184,8 @@ func TestSaveReport(t *testing.T) {
 		}
 
 		err = d.SaveReport(report, time.Now().UTC())
-		if tc.expected {
-			if err != nil {
-				t.Errorf("%v Expected nil got %v", tc, err)
-			}
-		} else {
-			if err == nil {
-				t.Errorf("%v Expected error, got nil", tc)
-			}
+		if err != tc.expected {
+			t.Errorf("%v Expected %v got %v", tc, tc.expected, err)
 		}
 	}
 }

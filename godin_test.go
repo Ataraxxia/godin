@@ -48,11 +48,11 @@ func TestUploadReport(t *testing.T) {
 	const testdatapath string = "testdata/godin/"
 	testtable := []struct {
 		file     string
-		expected bool
+		expected error
 	}{
 		{
 			file:     "apt_report_ok_1.json",
-			expected: true,
+			expected: nil,
 		},
 	}
 
