@@ -32,7 +32,8 @@ var (
 	BuildTime    string = ""
 
 	config *configuration
-	db     postgresdb.DB
+	//	db     postgresdb.DB
+	db Database
 
 	configFilePathPtr = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
