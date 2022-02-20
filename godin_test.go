@@ -38,8 +38,8 @@ func TestGetDefaultPage(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected error to be nil got %v", err)
 	}
-	if string(data) != "Godin" {
-		t.Errorf("expected Godin got %v", string(data))
+	if string(data) != MSG_OK+"\n" {
+		t.Errorf("expected %s got %v", MSG_OK, string(data))
 	}
 }
 
@@ -80,8 +80,8 @@ func TestUploadReport(t *testing.T) {
 			t.Errorf("expected error to be nil, got %v", err)
 		}
 
-		if string(data) != "Godin says OK\n" {
-			t.Errorf("expected 'Godin says ok', got %v", err)
+		if string(data) != MSG_OK+"\n" {
+			t.Errorf("expected %s got %v", MSG_OK, string(data))
 		}
 	}
 }

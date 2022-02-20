@@ -1,2 +1,10 @@
-godin
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
 run_tests.sh

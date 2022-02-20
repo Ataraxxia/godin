@@ -151,6 +151,7 @@ func TestSaveReport(t *testing.T) {
 		Password:      "",
 		DatabaseName:  "",
 		ServerAddress: "",
+		ServerPort:    "",
 		MockDB:        nil,
 	}
 

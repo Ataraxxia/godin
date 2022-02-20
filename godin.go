@@ -18,13 +18,14 @@ import (
 )
 
 type configuration struct {
-	Address         string
-	Port            string
-	LogLevel        string
-	SQLUser         string
-	SQLPassword     string
-	SQLDatabaseName string
-	SQLServerAddr   string
+	Address          string
+	Port             string
+	LogLevel         string
+	SQLUser          string
+	SQLPassword      string
+	SQLDatabaseName  string
+	SQLServerAddress string
+	SQLPort          string
 }
 
 var (
@@ -37,6 +38,13 @@ var (
 
 	configFilePathPtr = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
+)
+
+const (
+	MSG_OK                = "Godin OK"
+	MSG_SERVER_ERROR      = "Server side error"
+	MSG_JSON_ERROR        = "Error decoding JSON"
+	MSG_JSON_HEADER_ERROR = "Content-Type header is not application/json"
 )
 
 func loadConfig(fpath string) error {
@@ -78,7 +86,8 @@ func main() {
 		User:          config.SQLUser,
 		Password:      config.SQLPassword,
 		DatabaseName:  config.SQLDatabaseName,
-		ServerAddress: config.SQLServerAddr,
+		ServerAddress: config.SQLServerAddress,
+		ServerPort:    config.SQLPort,
 		MockDB:        nil,
 	}
 
@@ -98,7 +107,7 @@ func main() {
 }
 
 func getDefaultPage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Godin"))
+	http.Error(w, MSG_OK, http.StatusOK)
 }
 
 func uploadReport(w http.ResponseWriter, r *http.Request) {
@@ -107,8 +116,7 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
-			msg := "Content-Type header is not application/json"
-			http.Error(w, msg, http.StatusUnsupportedMediaType)
+			http.Error(w, MSG_JSON_HEADER_ERROR, http.StatusUnsupportedMediaType)
 			return
 		}
 	}
@@ -124,16 +132,19 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		if e, err := err.(*json.SyntaxError); err {
 			log.Printf("Syntax error at byte offset %d\n", e.Offset)
 		}
-
-		w.Write([]byte("Godin says Json decoding error\n"))
+		http.Error(w, MSG_JSON_ERROR, http.StatusBadRequest)
 		return
 	}
+
+	log.Debugf("Saving report from %s", report.HostInfo.Hostname)
 
 	t := time.Now().UTC()
 	err = db.SaveReport(report, t)
 	if err != nil {
 		log.Error(err)
+		http.Error(w, MSG_SERVER_ERROR, http.StatusInternalServerError)
+	} else {
+		http.Error(w, MSG_OK, http.StatusOK)
 	}
-
-	w.Write([]byte("Godin says OK\n"))
+	return
 }
