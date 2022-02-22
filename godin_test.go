@@ -48,17 +48,52 @@ func TestUploadReport(t *testing.T) {
 	const testdatapath string = "testdata/godin/"
 	testtable := []struct {
 		file     string
+		headers  []map[string]string
+		db       Database
+		msg      string
 		expected error
 	}{
+		// Everything OK
 		{
-			file:     "apt_report_ok_1.json",
+			file: "apt_report_ok_1.json",
+			headers: []map[string]string{
+				{"Content-Type": "application/json"},
+			},
+			db: MockDB{
+				initializeDatabaseErr: nil,
+				saveReportErr:         nil,
+			},
+			msg:      MSG_OK,
 			expected: nil,
 		},
-	}
 
-	db = MockDB{
-		initializeDatabaseErr: nil,
-		saveReportErr:         nil,
+		// Malformed JSON
+		{
+			file: "apt_report_bad_1.json",
+			headers: []map[string]string{
+				{"Content-Type": "application/json"},
+			},
+			db: MockDB{
+				initializeDatabaseErr: nil,
+				saveReportErr:         nil,
+			},
+			msg:      MSG_JSON_ERROR,
+			expected: nil,
+		},
+
+		// Wrong content header
+		{
+			file: "apt_report_ok_1.json",
+			headers: []map[string]string{
+				{"Content-Type": "application/xml"},
+			},
+			db: MockDB{
+				initializeDatabaseErr: nil,
+				saveReportErr:         nil,
+			},
+			msg:      MSG_JSON_HEADER_ERROR,
+			expected: nil,
+		},
 	}
 
 	for _, tc := range testtable {
@@ -66,7 +101,15 @@ func TestUploadReport(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Could not open test file %s", tc.file)
 		}
+
+		db = tc.db
+
 		req := httptest.NewRequest(http.MethodPost, "/reports/upload", f)
+		for _, h := range tc.headers {
+			for key, val := range h {
+				req.Header.Add(key, val)
+			}
+		}
 		w := httptest.NewRecorder()
 
 		uploadReport(w, req)
@@ -76,12 +119,12 @@ func TestUploadReport(t *testing.T) {
 
 		data, err := ioutil.ReadAll(res.Body)
 
-		if err != nil {
+		if err != tc.expected {
 			t.Errorf("expected error to be nil, got %v", err)
 		}
 
-		if string(data) != MSG_OK+"\n" {
-			t.Errorf("expected %s got %v", MSG_OK, string(data))
+		if string(data) != tc.msg+"\n" {
+			t.Errorf("expected %s got %v", tc.msg, string(data))
 		}
 	}
 }
