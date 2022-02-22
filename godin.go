@@ -7,48 +7,55 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Ataraxxia/godin/postgresdb"
 
-	rep "github.com/Ataraxxia/godin/Report"
+	rep "github.com/Ataraxxia/godin/report"
 	"github.com/golang/gddo/httputil/header"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
 
 type configuration struct {
-	Address         string
-	Port            string
-	LogLevel        string
-	SQLUser         string
-	SQLPassword     string
-	SQLDatabaseName string
-	SQLServerAddr   string
+	Address          string
+	Port             string
+	LogLevel         string
+	SQLUser          string
+	SQLPassword      string
+	SQLDatabaseName  string
+	SQLServerAddress string
+	SQLPort          string
 }
-
 
 var (
 	BuildVersion string = ""
 	BuildTime    string = ""
 
 	config *configuration
-	db     postgresdb.DB
+	//	db     postgresdb.DB
+	db Database
 
 	configFilePathPtr = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
 )
 
-func loadConfig() {
-	fpath := fmt.Sprint(*configFilePathPtr)
+const (
+	MSG_OK                = "Godin OK"
+	MSG_SERVER_ERROR      = "Server side error"
+	MSG_JSON_ERROR        = "Error decoding JSON"
+	MSG_JSON_HEADER_ERROR = "Content-Type header is not application/json"
+)
 
+func loadConfig(fpath string) error {
 	f, err := ioutil.ReadFile(fpath)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("Could not find configuration file %s", fpath))
+		return err
 	}
 
 	err = json.Unmarshal([]byte(f), &config)
 	if err != nil {
-		log.Fatal("Configration file not proper JSON")
+		return err
 	}
 	switch loglevel := strings.ToLower(config.LogLevel); loglevel {
 	case "debug":
@@ -57,31 +64,36 @@ func loadConfig() {
 	default:
 		log.SetLevel(log.InfoLevel)
 	}
+
+	return nil
 }
 
 func main() {
 	var err error
 	flag.Parse()
 
-	showVersion := *versionPtr
-
-	if showVersion == true {
+	if *versionPtr {
 		fmt.Printf("Godin Server v%s\n", BuildVersion)
 		return
 	}
 
-	loadConfig()
+	fpath := fmt.Sprintf(*configFilePathPtr)
+	if err = loadConfig(fpath); err != nil {
+		log.Fatal(err)
+	}
 
 	db = postgresdb.DB{
 		User:          config.SQLUser,
 		Password:      config.SQLPassword,
 		DatabaseName:  config.SQLDatabaseName,
-		ServerAddress: config.SQLServerAddr,
+		ServerAddress: config.SQLServerAddress,
+		ServerPort:    config.SQLPort,
+		MockDB:        nil,
 	}
 
-	err = db.InitDB()
+	err = db.InitializeDatabase()
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 
 	r := mux.NewRouter()
@@ -92,11 +104,10 @@ func main() {
 	log.Infof("Starting server %s:%s", config.Address, config.Port)
 	err = http.ListenAndServe(config.Address+":"+config.Port, r)
 	log.Info(err)
-
 }
 
 func getDefaultPage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Godin"))
+	http.Error(w, MSG_OK, http.StatusOK)
 }
 
 func uploadReport(w http.ResponseWriter, r *http.Request) {
@@ -105,8 +116,7 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
-			msg := "Content-Type header is not application/json"
-			http.Error(w, msg, http.StatusUnsupportedMediaType)
+			http.Error(w, MSG_JSON_HEADER_ERROR, http.StatusUnsupportedMediaType)
 			return
 		}
 	}
@@ -122,15 +132,19 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 		if e, err := err.(*json.SyntaxError); err {
 			log.Printf("Syntax error at byte offset %d\n", e.Offset)
 		}
-
-		w.Write([]byte("Godin says Json decoding error\n"))
+		http.Error(w, MSG_JSON_ERROR, http.StatusBadRequest)
 		return
 	}
 
-	err = db.SaveReport(report)
+	log.Debugf("Saving report from %s", report.HostInfo.Hostname)
+
+	t := time.Now().UTC()
+	err = db.SaveReport(report, t)
 	if err != nil {
 		log.Error(err)
+		http.Error(w, MSG_SERVER_ERROR, http.StatusInternalServerError)
+	} else {
+		http.Error(w, MSG_OK, http.StatusOK)
 	}
-
-	w.Write([]byte("Godin says OK\n"))
+	return
 }

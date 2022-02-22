@@ -1,0 +1,23 @@
+{
+   "host_info":{
+      "kernel":"5.0",
+      "architecture":"amd64",
+      "os":"Linux",
+      "hostname":"UnitTest"
+   },
+   "reboot_required":"no",
+   "repo_type":"apt",
+   "protocol":"1",
+   "package_manager":"apt",
+   "tags":[
+      
+   ],
+   "packages":[
+      {
+         "name":"pkg1",
+         "version":"v1",
+         "architecture":"any",
+         "repository":"http:\\repo1"
+      }
+   ]
+}
