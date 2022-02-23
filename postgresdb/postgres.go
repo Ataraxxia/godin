@@ -19,6 +19,14 @@ type DB struct {
 	MockDB        *sql.DB
 }
 
+type PostgreSQLConfiguration struct {
+	SQLUser          string
+	SQLPassword      string
+	SQLDatabaseName  string
+	SQLServerAddress string
+	SQLPort          string
+}
+
 func checkTableExists(db *sql.DB, name string) (bool, error) {
 	var exists bool
 	err := db.QueryRow(fmt.Sprintf("SELECT EXISTS ( SELECT FROM pg_tables WHERE  schemaname = 'public' AND tablename = '%s' );", name)).Scan(&exists)

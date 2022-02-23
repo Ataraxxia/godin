@@ -51,11 +51,14 @@ Create `/etc/godin/settings.json` file and fill it according to your needs. Make
 	"Address": "0.0.0.0",
 	"Port": "80",
 	"LogLevel": "INFO",
-	"SQLUser": "godin",
-	"SQLPassword": "password",
-	"SQLDatabaseName": "godin",
-	"SQLServerAddress": "localhost",
-	"SQLPort": "5432"
+	"DatabaseBackend": "PostgreSQL",
+	"PostgreSQL": {
+		"SQLUser": "godin",
+		"SQLPassword": "password",
+		"SQLDatabaseName": "godin",
+		"SQLServerAddress": "localhost",
+		"SQLPort": "5432"
+	}
 }
 ```
 

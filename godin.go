@@ -18,14 +18,11 @@ import (
 )
 
 type configuration struct {
-	Address          string
-	Port             string
-	LogLevel         string
-	SQLUser          string
-	SQLPassword      string
-	SQLDatabaseName  string
-	SQLServerAddress string
-	SQLPort          string
+	Address         string
+	Port            string
+	LogLevel        string
+	DatabaseBackend string
+	PostgreSQL      postgresdb.PostgreSQLConfiguration `json:"PostgreSQL,omitempty"`
 }
 
 var (
@@ -33,8 +30,7 @@ var (
 	BuildTime    string = ""
 
 	config *configuration
-	//	db     postgresdb.DB
-	db Database
+	db     Database
 
 	configFilePathPtr = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
@@ -45,6 +41,7 @@ const (
 	MSG_SERVER_ERROR      = "Server side error"
 	MSG_JSON_ERROR        = "Error decoding JSON"
 	MSG_JSON_HEADER_ERROR = "Content-Type header is not application/json"
+	MSG_NO_BACKEND_ERROR  = "Database backend not specified or not supported"
 )
 
 func loadConfig(fpath string) error {
@@ -82,13 +79,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db = postgresdb.DB{
-		User:          config.SQLUser,
-		Password:      config.SQLPassword,
-		DatabaseName:  config.SQLDatabaseName,
-		ServerAddress: config.SQLServerAddress,
-		ServerPort:    config.SQLPort,
-		MockDB:        nil,
+	switch strings.ToLower(config.DatabaseBackend) {
+	case "postgresql":
+		db = postgresdb.DB{
+			User:          config.PostgreSQL.SQLUser,
+			Password:      config.PostgreSQL.SQLPassword,
+			DatabaseName:  config.PostgreSQL.SQLDatabaseName,
+			ServerAddress: config.PostgreSQL.SQLServerAddress,
+			ServerPort:    config.PostgreSQL.SQLPort,
+			MockDB:        nil,
+		}
+	default:
+		log.Fatal(MSG_NO_BACKEND_ERROR)
 	}
 
 	err = db.InitializeDatabase()
