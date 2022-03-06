@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ataraxxia/godin/mongodb"
 	"github.com/Ataraxxia/godin/postgresdb"
 
 	rep "github.com/Ataraxxia/godin/report"
@@ -23,6 +24,7 @@ type configuration struct {
 	LogLevel        string
 	DatabaseBackend string
 	PostgreSQL      postgresdb.PostgreSQLConfiguration `json:"PostgreSQL,omitempty"`
+	MongoDB         mongodb.MongoDBConfiguration       `json:"PostgreSQL,omitempty"`
 }
 
 var (
@@ -62,6 +64,27 @@ func loadConfig(fpath string) error {
 		log.SetLevel(log.InfoLevel)
 	}
 
+	switch strings.ToLower(config.DatabaseBackend) {
+	case "postgresql":
+		db = postgresdb.DB{
+			User:          config.PostgreSQL.SQLUser,
+			Password:      config.PostgreSQL.SQLPassword,
+			DatabaseName:  config.PostgreSQL.SQLDatabaseName,
+			ServerAddress: config.PostgreSQL.SQLServerAddress,
+			ServerPort:    config.PostgreSQL.SQLPort,
+			MockDB:        nil,
+		}
+	case "mongodb":
+		db = mongodb.DB{
+			User:         config.MongoDB.User,
+			Password:     config.MongoDB.Password,
+			DatabaseName: config.MongoDB.DatabaseName,
+			URI:          config.MongoDB.URI,
+		}
+	default:
+		log.Fatal(MSG_NO_BACKEND_ERROR)
+	}
+
 	return nil
 }
 
@@ -77,20 +100,6 @@ func main() {
 	fpath := fmt.Sprintf(*configFilePathPtr)
 	if err = loadConfig(fpath); err != nil {
 		log.Fatal(err)
-	}
-
-	switch strings.ToLower(config.DatabaseBackend) {
-	case "postgresql":
-		db = postgresdb.DB{
-			User:          config.PostgreSQL.SQLUser,
-			Password:      config.PostgreSQL.SQLPassword,
-			DatabaseName:  config.PostgreSQL.SQLDatabaseName,
-			ServerAddress: config.PostgreSQL.SQLServerAddress,
-			ServerPort:    config.PostgreSQL.SQLPort,
-			MockDB:        nil,
-		}
-	default:
-		log.Fatal(MSG_NO_BACKEND_ERROR)
 	}
 
 	err = db.InitializeDatabase()
