@@ -374,8 +374,7 @@ fi
 truncate -s 0 $TMP_PAYLOAD
 
 echo "{" >> $TMP_PAYLOAD
-	cat $TMP_HOST_INFO >> $TMP_PAYLOAD
-	echo "," >> $TMP_PAYLOAD
+	cat $TMP_HOST_INFO >> $TMP_PAYLOAD; echo "," >> $TMP_PAYLOAD
 
 	if check_reboot_required ; then
 		echo "\"reboot_required\": \"yes\"," >> $TMP_PAYLOAD
@@ -384,12 +383,12 @@ echo "{" >> $TMP_PAYLOAD
 	fi
 
 	echo -n "\"tags\" : [" >> $TMP_PAYLOAD
-	if [ ! -z "$TAGS" ]; then
-		for tag in $(echo $TAGS | sed "s/,/ /g"); do
-			echo -n "\"$tag\"," >> $TMP_PAYLOAD
-		done
-		truncate -s-1 $TMP_PAYLOAD
-	fi
+		if [ ! -z "$TAGS" ]; then
+			for tag in $(echo $TAGS | sed "s/,/ /g"); do
+				echo -n "\"$tag\"," >> $TMP_PAYLOAD
+			done
+			truncate -s-1 $TMP_PAYLOAD
+		fi
 	echo "]," >> $TMP_PAYLOAD
 
 	echo "\"protocol\" : \"$PROTOCOL\"," >> $TMP_PAYLOAD
