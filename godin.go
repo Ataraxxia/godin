@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -33,8 +33,7 @@ var (
 	BuildTime    string = ""
 
 	config *configuration
-	//	db     postgresdb.DB
-	db Database
+	db     postgresdb.DB
 
 	configFilePathPtr = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
@@ -48,7 +47,7 @@ const (
 )
 
 func loadConfig(fpath string) error {
-	f, err := ioutil.ReadFile(fpath)
+	f, err := os.ReadFile(fpath)
 	if err != nil {
 		return err
 	}
@@ -77,7 +76,7 @@ func main() {
 		return
 	}
 
-	fpath := fmt.Sprintf(*configFilePathPtr)
+	fpath := fmt.Sprintf("%s", *configFilePathPtr)
 	if err = loadConfig(fpath); err != nil {
 		log.Fatal(err)
 	}
@@ -146,5 +145,4 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, MSG_OK, http.StatusOK)
 	}
-	return
 }
