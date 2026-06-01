@@ -7,4 +7,7 @@
 # Unignore all dirs
 !*/
 
+# Unignore makefile
+!Makefile
+
 run_tests.sh

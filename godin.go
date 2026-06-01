@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/Ataraxxia/godin/internal/version"
 	"github.com/Ataraxxia/godin/postgresdb"
 
 	rep "github.com/Ataraxxia/godin/report"
@@ -29,12 +30,8 @@ type configuration struct {
 }
 
 var (
-	BuildVersion string = ""
-	BuildTime    string = ""
-
 	config *configuration
-	//	db     postgresdb.DB
-	db Database
+	db     postgresdb.DB
 
 	configFilePathPtr = flag.String("config", "/etc/godin/settings.json", "Path to configuration file")
 	versionPtr        = flag.Bool("version", false, "Display version and exit")
@@ -48,7 +45,7 @@ const (
 )
 
 func loadConfig(fpath string) error {
-	f, err := ioutil.ReadFile(fpath)
+	f, err := os.ReadFile(fpath)
 	if err != nil {
 		return err
 	}
@@ -73,11 +70,11 @@ func main() {
 	flag.Parse()
 
 	if *versionPtr {
-		fmt.Printf("Godin Server v%s\n", BuildVersion)
+		fmt.Printf("Godin Server v%s\n", version.Version)
 		return
 	}
 
-	fpath := fmt.Sprintf(*configFilePathPtr)
+	fpath := fmt.Sprintf("%s", *configFilePathPtr)
 	if err = loadConfig(fpath); err != nil {
 		log.Fatal(err)
 	}
@@ -146,5 +143,4 @@ func uploadReport(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, MSG_OK, http.StatusOK)
 	}
-	return
 }
