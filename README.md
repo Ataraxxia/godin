@@ -42,6 +42,7 @@ Godin server requires PostgreSQL database, prefferably version 13 and up. You ca
 create database godin;
 create user godin with encrypted password 'password'; -- REMEMBER TO CHANGE PASSWORD!
 grant all privileges on database godin to godin;
+alter database godin owner to godin;
 ```
 
 Create `/etc/godin/settings.json` file and fill it according to your needs. Make it so same user that runs executable can access this file.
