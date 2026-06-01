@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ataraxxia/godin/internal/version"
 	"github.com/Ataraxxia/godin/postgresdb"
 
 	rep "github.com/Ataraxxia/godin/report"
@@ -29,9 +30,6 @@ type configuration struct {
 }
 
 var (
-	BuildVersion string = ""
-	BuildTime    string = ""
-
 	config *configuration
 	db     postgresdb.DB
 
@@ -72,7 +70,7 @@ func main() {
 	flag.Parse()
 
 	if *versionPtr {
-		fmt.Printf("Godin Server v%s\n", BuildVersion)
+		fmt.Printf("Godin Server v%s\n", version.Version)
 		return
 	}
 
