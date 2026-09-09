@@ -1,0 +1,150 @@
+version: 2
+project_name: godin
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: server
+    main: .
+    binary: godin
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/Ataraxxia/godin/internal/version.Version={{ .Version }}
+      - -X github.com/Ataraxxia/godin/internal/version.Commit={{ .ShortCommit }}
+      - -X github.com/Ataraxxia/godin/internal/version.Date={{ .CommitDate }}
+
+archives:
+  - id: server
+    ids: [server]
+    formats: [tar.gz]
+    files:
+      - README.md
+      - LICENSE
+      - settings.json.example
+
+snapshot:
+  version_template: "{{ incpatch .Version }}~git{{ .ShortCommit }}"
+
+nfpms:
+  # ---------------- godin-server ----------------
+  - id: server
+    package_name: godin-server
+    ids: [server]
+    formats: [deb, rpm]
+    maintainer: Ataraxxia <tekkiesdc@gmail.com>
+    homepage: https://github.com/Ataraxxia/godin
+    license: GPL-3.0-or-later
+    description: |-
+      GOdin monitoring server.
+      Receives and stores system state reports from GOdin agents in PostgreSQL.
+    vendor: Ataraxxia
+    section: net
+    priority: optional
+    release: "1"
+    bindir: /usr/bin
+
+    contents:
+      - src: ./packaging/server/godin-server.service
+        dst: /usr/lib/systemd/system/godin-server.service
+
+      - src: ./packaging/server/godin.sysusers
+        dst: /usr/lib/sysusers.d/godin.conf
+
+      - src: ./packaging/server/settings.json
+        dst: /etc/godin/settings.json
+        type: "config|noreplace"
+        file_info:
+          mode: 0640
+          owner: root
+          group: godin
+
+      - dst: /etc/godin
+        type: dir
+        file_info:
+          mode: 0750
+          owner: root
+          group: godin
+
+      - src: ./README.md
+        dst: /usr/share/doc/godin-server/README.md
+      - src: ./LICENSE
+        dst: /usr/share/doc/godin-server/LICENSE
+
+    scripts:
+      preinstall: ./packaging/server/preinstall.sh
+      postinstall: ./packaging/server/postinstall.sh
+      preremove: ./packaging/server/preremove.sh
+
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
+    rpm:
+      summary: GOdin monitoring server
+
+  # ---------------- godin-client ----------------
+  - id: client
+    package_name: godin-client
+    meta: true                      # no compiled binary in this package
+    formats: [deb, rpm]
+    maintainer: Ataraxxia <tekkiesdc@gmail.com>
+    homepage: https://github.com/Ataraxxia/godin
+    license: GPL-3.0-or-later
+    description: |-
+      GOdin monitoring agent.
+      Collects host and package state and reports it to a GOdin server.
+    vendor: Ataraxxia
+    section: net
+    priority: optional
+    release: "1"
+
+    dependencies:
+      - curl
+
+    contents:
+      - src: ./client/godin_client.sh
+        dst: /usr/bin/godin-client
+        file_info:
+          mode: 0755
+
+      - src: ./packaging/client/godin-client.conf
+        dst: /etc/godin/godin-client.conf
+        type: "config|noreplace"
+        file_info:
+          mode: 0644
+
+      - src: ./packaging/client/godin-client.service
+        dst: /usr/lib/systemd/system/godin-client.service
+      - src: ./packaging/client/godin-client.timer
+        dst: /usr/lib/systemd/system/godin-client.timer
+
+      - src: ./LICENSE
+        dst: /usr/share/doc/godin-client/LICENSE
+
+    scripts:
+      postinstall: ./packaging/client/postinstall.sh
+      preremove: ./packaging/client/preremove.sh
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: Ataraxxia
+    name: godin
+  prerelease: auto
+

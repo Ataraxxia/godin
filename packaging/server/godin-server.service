@@ -1,0 +1,23 @@
+[Unit]
+Description=GOdin monitoring server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=godin
+Group=godin
+ExecStart=/usr/bin/godin
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

@@ -10,4 +10,4 @@
 # Unignore makefile
 !Makefile
 
-run_tests.sh
+dist

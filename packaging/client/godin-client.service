@@ -1,0 +1,31 @@
+[Unit]
+Description=Collect and upload GOdin system report
+Documentation=https://github.com/Ataraxxia/godin
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/godin/godin-client.conf
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/godin-client
+TimeoutStartSec=300
+
+# Retry a couple of times if the server is briefly unreachable
+Restart=on-failure
+RestartSec=60s
+
+# Modest hardening. The agent needs to read package metadata, so it stays
+# root, but nothing it does requires touching /usr, /boot or home dirs.
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+# Don't let a stuck report starve the box
+Nice=10
+IOSchedulingClass=idle
