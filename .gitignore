@@ -10,4 +10,6 @@
 # Unignore makefile
 !Makefile
 
-run_tests.sh
+packaging
+
+.goreleaser.yaml
