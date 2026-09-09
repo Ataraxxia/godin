@@ -1,0 +1,11 @@
+[Unit]
+Description=Run GOdin agent report
+
+[Timer]
+OnBootSec=3m
+OnCalendar=daily
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

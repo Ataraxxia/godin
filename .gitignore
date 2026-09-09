@@ -10,6 +10,4 @@
 # Unignore makefile
 !Makefile
 
-packaging
-
-.goreleaser.yaml
+dist
