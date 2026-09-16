@@ -29,3 +29,6 @@ LockPersonality=yes
 # Don't let a stuck report starve the box
 Nice=10
 IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target
