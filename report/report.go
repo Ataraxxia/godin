@@ -28,8 +28,19 @@ type HostInfo struct {
 	Hostname     string `json:"hostname"`
 }
 
+type UserInfo struct {
+	Username string `json:"username"`
+	Groups   string `json:"groups"`
+	UID      int    `json:"uid"`
+}
+
+type AAA struct {
+	UsersInfo []UserInfo `json:"usersinfo"`
+}
+
 type Report struct {
 	HostInfo       HostInfo     `json:"host_info"`
+	AAA            AAA          `json:"AAA"`
 	RebootRequired string       `json:"reboot_required"`
 	RepositoryType string       `json:"repo_type"`
 	Protocol       string       `json:"protocol"`

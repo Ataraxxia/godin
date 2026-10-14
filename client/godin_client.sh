@@ -19,6 +19,7 @@ TMP_PKG_LIST="/tmp/godin_pkg_list"
 TMP_HOST_INFO="/tmp/godin_host_info"
 TMP_PAYLOAD="/tmp/godin_payload"
 TMP_REPO_INFO="/tmp/godin_repo_info"
+TMP_SYSTEM_AAA="/tmp/godin_system_aaa"
 
 usage() {
 	echo "${0} [-v] [-d] [-u] [-s SERVER] [-c FILE] [-t TAGS] [-h HOSTNAME]"
@@ -145,6 +146,37 @@ get_host_data() {
 		echo "Using hostname: $HOSTNAME"
 	fi
 
+}
+
+get_system_aaa() {
+	truncate -s 0  $TMP_SYSTEM_AAA
+
+	echo "\"AAA\" : {" >> $TMP_SYSTEM_AAA
+	echo "\"UsersInfo\" : [" >> $TMP_SYSTEM_AAA
+
+	users_count=$(getent passwd | wc -l)
+
+	i=0
+	getent passwd | cut -d: -f1 | while read -r u; do
+		i=$(expr $i + 1)
+
+		tmp_user=${u}
+		tmp_user_groups="$(id -nG "$u")"
+		tmp_uid="$(id -u "$u")"
+		
+		echo "{" >> $TMP_SYSTEM_AAA
+		echo "\"Username\": \"$tmp_user\"," >> $TMP_SYSTEM_AAA
+		echo "\"Groups\": \"$tmp_user_groups\"," >> $TMP_SYSTEM_AAA
+		echo "\"UID\": $tmp_uid" >> $TMP_SYSTEM_AAA
+		if [ $i -eq $users_count ]; then
+			echo "}" >> $TMP_SYSTEM_AAA
+		else
+			echo "}," >> $TMP_SYSTEM_AAA
+		fi
+	done
+
+	echo "]" >> $TMP_SYSTEM_AAA
+	echo -n "}" >> $TMP_SYSTEM_AAA
 }
 
 get_apt_packages() {
@@ -443,6 +475,7 @@ check_reboot_required() {
 cleanup() {
 	rm $TMP_HOST_INFO
 	rm $TMP_PKG_LIST
+	rm $TMP_SYSTEM_AAA
 	if [ -s "$TMP_REPO_INFO" ]; then
 		rm $TMP_REPO_INFO
 	fi
@@ -459,6 +492,8 @@ check_requirements
 
 get_host_data
 
+get_system_aaa
+
 if check_command_exists apt-get; then
 	get_apt_packages
 elif check_command_exists dnf; then
@@ -471,6 +506,7 @@ truncate -s 0 $TMP_PAYLOAD
 
 echo "{" >> $TMP_PAYLOAD
 	cat $TMP_HOST_INFO >> $TMP_PAYLOAD; echo "," >> $TMP_PAYLOAD
+	cat $TMP_SYSTEM_AAA >> $TMP_PAYLOAD; echo "," >> $TMP_PAYLOAD
 
 	if check_reboot_required ; then
 		echo "\"reboot_required\": \"yes\"," >> $TMP_PAYLOAD
