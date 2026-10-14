@@ -329,6 +329,100 @@ get_yum_packages() {
 	echo "]" >> $TMP_PKG_LIST
 }
 
+get_dnf_packages() {
+	truncate -s 0  $TMP_REPO_INFO
+	truncate -s 0 $TMP_PKG_LIST
+
+	if [ $UPDATE -eq 1 ]; then
+		dnf makecache --quiet
+
+		if [ $? -eq 0 ]; then
+			echo "\"repo_update_successful\" : true," >> $TMP_PKG_LIST
+		else
+			echo "\"repo_update_successful\" : false," >> $TMP_PKG_LIST
+		fi
+	fi
+
+	echo "\"repositories\" : [" >> $TMP_REPO_INFO
+	dnf repoinfo | while read line; do
+		field_id=$(echo $line | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | awk -F':' '{print $1}')
+		field_val=$(echo $line | cut -d ':' -f 2- )
+		case "$field_id" in
+			"repo-id")
+				repo_alias=$(echo $field_val | awk -F'/' '{print $1}' | tr -d '[:space:]')
+				echo "	{" >> $TMP_REPO_INFO
+				echo "		\"repository_alias\" : \"$repo_alias\"," >> $TMP_REPO_INFO
+				echo "		\"repository_id\" : \"$field_val\"," >> $TMP_REPO_INFO
+				;;
+			"repo-name")
+				echo "		\"repository_name\" : \"$field_val\"," >> $TMP_REPO_INFO
+				;;
+			"repo-baseurl")
+				baseurl=$(echo $field_val | awk '{print $1}')
+				echo "		\"repository_baseurl\" : \"$baseurl\"" >> $TMP_REPO_INFO
+				echo "	}," >> $TMP_REPO_INFO
+				;;
+		esac
+	done
+	truncate -s-2 $TMP_REPO_INFO # Removing trailing comma
+	echo "]" >> $TMP_REPO_INFO
+
+	packages_count=$(dnf repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | wc -l)
+
+	if [ $QUIET -eq 0 ]; then
+		echo "Found $packages_count installed packages"
+	fi
+
+	echo "\"repo_type\" : \"rpm\"," >> $TMP_PKG_LIST
+	echo "\"package_manager\" : \"dnf\"," >> $TMP_PKG_LIST
+	echo "\"packages\" : [" >> $TMP_PKG_LIST
+
+	i=0
+	dnf -q --setopt=autocheck_running_kernel=False check-update | grep -v ^$ | while read package; do
+		package_name=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo "$package" | awk '{print $2}')
+		package_aliasrepo=$(echo "$package" | awk '{print $3}')
+
+		if [ $i -eq 0 ] && [ ! -z "$package_name" ] && [ "$package_name" == "Loaded" ]; then
+			i=$(expr $i + 1)
+			continue
+		fi
+
+		echo "{" >> $TMP_PKG_LIST
+		echo "	\"upgrade\": \"yes\"," >> $TMP_PKG_LIST
+		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
+		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
+		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
+		echo "	\"repository\": \"$package_aliasrepo\"" >> $TMP_PKG_LIST
+		echo "}," >> $TMP_PKG_LIST
+	done
+
+	i=0
+	# simply listing with yum can possibly break some columns
+	dnf repoquery '*' --queryformat='%{name} %{evr} %{ui_from_repo}' --installed | while read package; do
+		i=$(expr $i + 1)
+
+		package_name=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $1}')
+		package_arch=$(echo "$package" | awk '{print $1}' | awk -F'.' '{print $2}')
+		package_version=$(echo "$package" | awk '{print $2}')
+		package_aliasrepo=$(echo "$package" | awk '{print $3}')
+
+		echo "{" >> $TMP_PKG_LIST
+		echo "	\"name\": \"$package_name\"," >> $TMP_PKG_LIST
+		echo "	\"version\": \"$package_version\"," >> $TMP_PKG_LIST
+		echo "	\"architecture\": \"$package_arch\"," >> $TMP_PKG_LIST
+		echo "	\"repository\": \"$package_aliasrepo\"" >> $TMP_PKG_LIST
+		if [ $i -eq $packages_count ]; then
+			echo "}" >> $TMP_PKG_LIST
+		else
+			echo "}," >> $TMP_PKG_LIST
+		fi
+	done
+
+	echo "]" >> $TMP_PKG_LIST
+}
+
 check_reboot_required() {
 	reboot=0
 	if check_command_exists needs-restarting ; then
@@ -367,6 +461,8 @@ get_host_data
 
 if check_command_exists apt-get; then
 	get_apt_packages
+elif check_command_exists dnf; then
+	get_dnf_packages
 elif check_command_exists yum; then
 	get_yum_packages
 fi
